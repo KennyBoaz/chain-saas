@@ -36,6 +36,10 @@ router.use(health);
 // ---- API Routes ----
 router.use("/api/auth", authRoutes);
 router.use("/api/tenant", tenantRoutes);
+router.use("/api/auth", require("./routes/auth.js"));
+router.use("/api/tenant", require("./routes/tenant.js"));
+router.use("/api/billing", require("./routes/billing.js"));
+router.use("/api/platform", require("./routes/platform.js")); // <-- ADD THIS LINE
 
 
 // ---- PWA static assets (Phase 0 placeholder) ----
