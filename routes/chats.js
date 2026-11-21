@@ -109,4 +109,48 @@ router.post("/seed-demo", auth.requireAuth, wrap(async (req, res) => {
 }));
 
 
+// ==========================================
+// AI TOOL ENDPOINTS (For Gemini to use)
+// ==========================================
+
+// 1. Create an Appointment
+router.post("/tools/appointment", auth.requireAuth, wrap(async (req, res) => {
+  const { phone, name, date, time, purpose } = req.body;
+  const ref = "APT-" + Math.floor(Math.random() * 1000000);
+  
+  await db.run(`
+    INSERT INTO appointments (tenant_id, ref, phone, name, appt_date, appt_time, purpose, status, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, 'new', UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))
+  `, [req.user.tenant_id, ref, phone, name, date, time, purpose]);
+  
+  res.json({ ok: true, ref });
+}));
+
+// 2. Create an Order
+router.post("/tools/order", auth.requireAuth, wrap(async (req, res) => {
+  const { phone, name, items, address } = req.body;
+  const ref = "ORD-" + Math.floor(Math.random() * 1000000);
+  
+  await db.run(`
+    INSERT INTO orders (tenant_id, ref, phone, customer_name, items, delivery_address, status, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, 'new', UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))
+  `, [req.user.tenant_id, ref, phone, name, items, address]);
+  
+  res.json({ ok: true, ref });
+}));
+
+// 3. Create a Support Ticket
+router.post("/tools/ticket", auth.requireAuth, wrap(async (req, res) => {
+  const { phone, name, summary, details } = req.body;
+  const ref = "TKT-" + Math.floor(Math.random() * 1000000);
+  
+  await db.run(`
+    INSERT INTO issues (tenant_id, ref, type, phone, customer_name, summary, details, status, created_at, updated_at)
+    VALUES (?, ?, 'support', ?, ?, ?, ?, 'new', UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))
+  `, [req.user.tenant_id, ref, phone, name, summary, details]);
+  
+  res.json({ ok: true, ref });
+}));
+
+
 module.exports = router;

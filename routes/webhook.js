@@ -74,7 +74,7 @@ router.post("/", async (req, res) => {
 
 
     // D. Generate AI Reply
-    const aiReply = await generateReply(connection.tenant_id, textBody);
+    const aiReply = await generateReply(connection.tenant_id, customerPhone, textBody);
 
     // E. Send the reply back to WhatsApp
     const accessToken = cryptoHelper.decryptString(connection.access_token_enc);
