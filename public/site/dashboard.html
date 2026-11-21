@@ -64,7 +64,7 @@
     async function loadData() {
       try {
         const res = await fetch('/chain-saas/api/auth/me', { headers: { 'X-CSRF-Token': csrf } });
-        if (res.status === 401) return window.location.href = '/site/login.html';
+        if (res.status === 401) return window.location.href = '/chain-saas/site/login.html';
         
         const data = await res.json();
         currentTenant = data.tenant;
@@ -188,7 +188,7 @@
     async function logout() {
       await fetch('/chain-saas/api/auth/logout', { method: 'POST', headers: { 'X-CSRF-Token': csrf } });
       localStorage.removeItem('csrf');
-      window.location.href = '/site/index.html';
+      window.location.href = '/chain-saas/site/index.html';
     }
 
     // --- PWA Service Worker Registration ---
