@@ -1,0 +1,27 @@
+:root {
+  --primary: #243b32;
+  --gold: #a8873a;
+  --bg: #f7f4ee;
+  --text: #151515;
+  --muted: #6f6a5f;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+body { background: var(--bg); color: var(--text); line-height: 1.6; }
+nav { display: flex; justify-content: space-between; padding: 20px 40px; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,.05); }
+.logo { font-weight: bold; font-size: 20px; color: var(--primary); }
+.btn { background: var(--primary); color: #fff; padding: 10px 20px; border-radius: 6px; text-decoration: none; border: none; cursor: pointer; font-size: 15px; }
+.btn:hover { background: #1a2e26; }
+.btn-large { padding: 15px 30px; font-size: 18px; }
+.hero { text-align: center; padding: 100px 20px; max-width: 800px; margin: 0 auto; }
+.hero h1 { font-size: 48px; color: var(--primary); margin-bottom: 20px; line-height: 1.1; }
+.hero p { font-size: 18px; color: var(--muted); margin-bottom: 40px; }
+.pricing { padding: 60px 20px; max-width: 1100px; margin: 0 auto; text-align: center; }
+.plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; margin-top: 40px; }
+.card { background: #fff; padding: 40px; border-radius: 10px; border: 1px solid #ddd; text-align: left; box-shadow: 0 4px 20px rgba(0,0,0,.03); }
+.card h3 { color: var(--primary); font-size: 24px; margin-bottom: 10px; }
+.price { font-size: 32px; font-weight: bold; margin-bottom: 20px; }
+.price span { font-size: 16px; color: var(--muted); font-weight: normal; }
+.card ul { list-style: none; margin-bottom: 30px; color: var(--muted); }
+.card li { margin-bottom: 10px; padding-left: 20px; position: relative; }
+.card li::before { content: "✓"; position: absolute; left: 0; color: var(--gold); }
+.card .btn { width: 100%; text-align: center; }

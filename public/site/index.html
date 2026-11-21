@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chain SaaS — WhatsApp AI for Business</title>
+  <link rel="stylesheet" href="/site/style.css">
+</head>
+<body>
+  <nav>
+    <div class="logo">Chain Innovation</div>
+    <div class="links">
+      <a href="/site/login.html">Login</a>
+      <a href="/site/signup.html" class="btn">Get Started</a>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <h1>Supercharge your WhatsApp Business with AI.</h1>
+    <p>Connect your WhatsApp number, train your AI assistant, and never miss a customer message again. 24/7 automated replies, multi-agent handoffs, and deep analytics.</p>
+    <a href="/site/signup.html" class="btn btn-large">Start Free Trial</a>
+  </header>
+
+  <section class="pricing">
+    <h2>Simple, transparent pricing</h2>
+    <div class="plans" id="pricing-cards">
+      <!-- Loaded via JS -->
+    </div>
+  </section>
+
+  <script>
+    // Fetch plans dynamically from Phase 2 API
+    fetch('/chain-saas/api/billing/plans')
+      .then(r => r.json())
+      .then(data => {
+        const container = document.getElementById('pricing-cards');
+        data.plans.forEach(plan => {
+          container.innerHTML += `
+            <div class="card">
+              <h3>${plan.name}</h3>
+              <div class="price">${Number(plan.amount_ugx).toLocaleString()} UGX<span>/mo</span></div>
+              <ul>
+                <li>${plan.limits_json.messages_per_month} Messages</li>
+                <li>${plan.limits_json.staff_seats} Staff Seats</li>
+                <li>${plan.limits_json.whatsapp_numbers} WhatsApp Number(s)</li>
+              </ul>
+              <a href="/site/signup.html?plan=${plan.id}" class="btn">Choose ${plan.name}</a>
+            </div>
+          `;
+        });
+      });
+  </script>
+</body>
+</html>

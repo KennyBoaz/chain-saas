@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — Chain SaaS</title>
+  <link rel="stylesheet" href="/site/style.css">
+  <style>
+    .auth-container { max-width: 480px; margin: 60px auto; background: #fff; padding: 40px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.1); }
+    .form-group { margin-bottom: 20px; }
+    label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 14px; }
+    input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; }
+    .error { color: red; font-size: 14px; margin-bottom: 15px; display: none; }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="logo"><a href="/site/index.html" style="text-decoration:none; color:inherit;">Chain Innovation</a></div>
+  </nav>
+
+  <div class="auth-container">
+    <h2>Welcome back</h2>
+    <p style="color:var(--muted); margin-bottom: 30px;">Log in to manage your WhatsApp bot.</p>
+    
+    <div class="error" id="err"></div>
+
+    <form id="login-form">
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="email" required>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="password" required>
+      </div>
+      <button type="submit" class="btn btn-large" style="width:100%;">Log In</button>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = e.target.querySelector('button');
+      const err = document.getElementById('err');
+      err.style.display = 'none';
+      btn.textContent = 'Logging in...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/chain-saas/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value
+          })
+        });
+        const data = await res.json();
+        
+        if (!res.ok) throw new Error(data.error || 'Login failed');
+        
+        // Save CSRF for future requests
+        localStorage.setItem('csrf', data.csrf);
+        window.location.href = '/site/dashboard.html';
+      } catch (e) {
+        err.textContent = e.message;
+        err.style.display = 'block';
+        btn.textContent = 'Log In';
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
