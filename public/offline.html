@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Offline — Chain SaaS</title>
+  <style>
+    body { margin: 0; font: 14px/1.5 system-ui, sans-serif; background: #f7f4ee; color: #151515;
+           min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .card { max-width: 420px; background: #fff; border: 1px solid #e4dfd3; border-radius: 10px;
+            padding: 28px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,.08); }
+    h1 { font-family: Georgia, serif; font-size: 26px; margin: 0 0 8px; color: #243b32; }
+    p { color: #55514a; margin: 0 0 16px; }
+    button { background: #243b32; color: #fff; border: 0; padding: 10px 20px; border-radius: 6px;
+             font: inherit; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>You're offline</h1>
+    <p>The app is installed and ready. Your chats, drafts and queued replies will sync when your connection returns.</p>
+    <button onclick="location.reload()">Try again</button>
+  </div>
+  <script>
+    // If the app becomes reachable while this page is open, bounce back.
+    addEventListener("online", () => location.reload());
+  </script>
+</body>
+</html>
