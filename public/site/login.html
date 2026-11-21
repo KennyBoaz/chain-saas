@@ -61,7 +61,14 @@
         
         // Save CSRF for future requests
         localStorage.setItem('csrf', data.csrf);
-        window.location.href = '/chain-saas/site/dashboard.html';
+        
+        // Route based on user role
+        if (data.user && data.user.role === 'super_admin') {
+          window.location.href = '/chain-saas/site/superadmin.html';
+        } else {
+          window.location.href = '/chain-saas/site/dashboard.html';
+        }
+      
       } catch (e) {
         err.textContent = e.message;
         err.style.display = 'block';

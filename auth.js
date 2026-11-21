@@ -11,8 +11,7 @@ const TTL_MS = (Number(process.env.SESSION_TTL_HOURS) || 168) * 3600 * 1000;
 const COOKIE_OPTS = {
   httpOnly: true,
   sameSite: "lax",
-  secure: process.env.NODE_ENV === "production",
-  path: "/",
+  secure: false, // Temporarily allow HTTP (or if SSL is configured on cPanel, this fixes the drop)  path: "/",
   maxAge: TTL_MS,
 };
 
