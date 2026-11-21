@@ -58,4 +58,93 @@ router.post("/tenants/:id/connect-token", wrap(async (req, res) => {
   res.json({ ok: true, token, message: "Give this token to the client." });
 }));
 
+
+// ==========================================
+// SUPER ADMIN & TEAM MANAGEMENT
+// ==========================================
+
+// 1. Team & Tasks
+router.get("/team", wrap(async (_req, res) => {
+  const team = await db.all("SELECT id, name, email, role FROM platform_staff WHERE active = 1");
+  res.json({ team });
+}));
+
+router.post("/tasks", wrap(async (req, res) => {
+  const { title, detail, assignedTo, tenantId, dueAt } = req.body;
+  const result = await db.run(`
+    INSERT INTO platform_tasks (title, detail, assigned_to, assigned_by, tenant_id, due_at, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))
+  `, [title, detail, assignedTo, req.platformStaff.id, tenantId || null, dueAt || null]);
+  res.json({ ok: true, taskId: result.insertId });
+}));
+
+router.get("/tasks", wrap(async (req, res) => {
+  // If super_admin, show all tasks. If team member, show only theirs.
+  let query = `
+    SELECT t.*, p.name AS assignee_name, ten.business_name AS tenant_name
+    FROM platform_tasks t
+    JOIN platform_staff p ON p.id = t.assigned_to
+    LEFT JOIN tenants ten ON ten.id = t.tenant_id
+  `;
+  let params = [];
+  
+  if (req.platformStaff.role !== "super_admin") {
+    query += " WHERE t.assigned_to = ?";
+    params.push(req.platformStaff.id);
+  }
+  
+  query += " ORDER BY t.created_at DESC LIMIT 50";
+  const tasks = await db.all(query, params);
+  res.json({ tasks });
+}));
+
+// 2. Global Settings (e.g., Bank Details for Cash clients)
+router.get("/settings", wrap(async (_req, res) => {
+  const settings = await db.all("SELECT skey, svalue, is_secret FROM platform_settings");
+  const map = {};
+  settings.forEach(s => map[s.skey] = s.is_secret ? "********" : s.svalue);
+  res.json({ settings: map });
+}));
+
+router.post("/settings", wrap(async (req, res) => {
+  const { key, value, isSecret } = req.body;
+  await db.run(`
+    INSERT INTO platform_settings (skey, svalue, is_secret, updated_by, updated_at)
+    VALUES (?, ?, ?, ?, UTC_TIMESTAMP(3))
+    ON DUPLICATE KEY UPDATE svalue = VALUES(svalue), updated_by = VALUES(updated_by), updated_at = VALUES(updated_at)
+  `, [key, value, isSecret ? 1 : 0, req.platformStaff.id]);
+  res.json({ ok: true });
+}));
+
+// 3. Tenant Overrides
+router.post("/tenants/:id/extend", wrap(async (req, res) => {
+  const { days } = req.body;
+  const tenantId = req.params.id;
+  
+  // Find their latest subscription and add days to it
+  const sub = await db.one("SELECT id FROM subscriptions WHERE tenant_id = ? ORDER BY id DESC LIMIT 1", [tenantId]);
+  if (sub) {
+    await db.run(
+      "UPDATE subscriptions SET current_period_end = DATE_ADD(current_period_end, INTERVAL ? DAY) WHERE id = ?",
+      [days, sub.id]
+    );
+  } else {
+    // If no sub exists, create one starting now
+    const plan = await db.one("SELECT id FROM plans LIMIT 1");
+    await db.run(
+      "INSERT INTO subscriptions (tenant_id, plan_id, status, current_period_start, current_period_end, source, created_at, updated_at) VALUES (?, ?, 'active', UTC_TIMESTAMP(3), DATE_ADD(UTC_TIMESTAMP(3), INTERVAL ? DAY), 'manual', UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))",
+      [tenantId, plan.id, days]
+    );
+  }
+  
+  // Ensure tenant is marked active
+  await db.run("UPDATE tenants SET status = 'active', billing_status = 'active' WHERE id = ?", [tenantId]);
+  res.json({ ok: true, message: `Extended by ${days} days.` });
+}));
+
+router.post("/tenants/:id/suspend", wrap(async (req, res) => {
+  await db.run("UPDATE tenants SET status = 'suspended', billing_status = 'suspended' WHERE id = ?", [req.params.id]);
+  res.json({ ok: true, message: "Tenant suspended." });
+}));
+
 module.exports = router;

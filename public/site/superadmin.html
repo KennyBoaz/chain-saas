@@ -2,94 +2,232 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Super Admin — Chain SaaS</title>
-  <link rel="stylesheet" href="/site/style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Platform Console — Chain SaaS</title>
+  <link rel="stylesheet" href="/chain-saas/site/style.css">
   <style>
-    .dash-container { max-width: 1100px; margin: 40px auto; padding: 0 20px; }
-    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,.05); }
-    th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
-    th { background: #f9f9f9; font-weight: 600; font-size: 14px; color: var(--muted); }
+    body { background: #f4f6f8; }
+    .dash-container { max-width: 1200px; margin: 40px auto; padding: 0 20px; }
+    .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    
+    .panel { background: #fff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,.05); margin-bottom: 20px; overflow: hidden; }
+    .panel-header { padding: 15px 20px; background: #fff; border-bottom: 1px solid #eee; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+    .panel-body { padding: 20px; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px 20px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
+    th { background: #fafafa; color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; }
+    
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+    .flex-actions { display: flex; gap: 8px; }
+    
+    /* Modal */
+    .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.5); align-items: center; justify-content: center; z-index: 1000; }
+    .modal-content { background: #fff; padding: 30px; border-radius: 8px; width: 100%; max-width: 500px; }
+    .modal h3 { margin-bottom: 20px; }
   </style>
 </head>
 <body>
   <nav>
-    <div class="logo">Chain Innovation — Super Admin</div>
+    <div class="logo">Chain Innovation — Platform Console</div>
     <div class="links">
-      <button onclick="logout()" class="btn" style="background: #eee; color: #333;">Log Out</button>
+      <span id="nav-user" style="margin-right: 20px; font-size: 14px; color: var(--muted);"></span>
+      <button onclick="logout()" class="btn btn-sm" style="background: #eee; color: #333;">Log Out</button>
     </div>
   </nav>
 
   <div class="dash-container">
-    <h1>Tenants</h1>
-    <p style="color: var(--muted); margin-bottom: 20px;">Manage all businesses on the platform.</p>
-    
-    <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Business</th>
-          <th>Status</th>
-          <th>Expiry</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="tenant-rows"></tbody>
-    </table>
+    <div class="header-row">
+      <h1>Tenants</h1>
+      <button class="btn" onclick="openTaskModal()">+ Assign New Task</button>
+    </div>
+
+    <!-- Tenants Table -->
+    <div class="panel">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Business</th>
+            <th>Status</th>
+            <th>Expiry Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tenant-rows"></tbody>
+      </table>
+    </div>
+
+    <h1 style="margin-top: 40px;">Team Tasks</h1>
+    <!-- Tasks Table -->
+    <div class="panel">
+      <table>
+        <thead>
+          <tr>
+            <th>Task</th>
+            <th>Assigned To</th>
+            <th>Tenant</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="task-rows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Task Modal -->
+  <div class="modal" id="task-modal">
+    <div class="modal-content">
+      <h3>Assign Task</h3>
+      <div class="form-group">
+        <label>Task Title</label>
+        <input type="text" id="task-title" style="width:100%; padding:8px; margin-bottom:10px; border:1px solid #ccc; border-radius:4px;">
+      </div>
+      <div class="form-group">
+        <label>Details</label>
+        <textarea id="task-detail" style="width:100%; padding:8px; margin-bottom:10px; border:1px solid #ccc; border-radius:4px; height:80px;"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Assign To</label>
+        <select id="task-assignee" style="width:100%; padding:8px; margin-bottom:10px; border:1px solid #ccc; border-radius:4px;"></select>
+      </div>
+      <div class="form-group">
+        <label>Related Tenant (Optional)</label>
+        <select id="task-tenant" style="width:100%; padding:8px; margin-bottom:20px; border:1px solid #ccc; border-radius:4px;"></select>
+      </div>
+      <div class="flex-actions">
+        <button class="btn" onclick="saveTask()">Save Task</button>
+        <button class="btn" style="background:#ccc;" onclick="document.getElementById('task-modal').style.display='none'">Cancel</button>
+      </div>
+    </div>
   </div>
 
   <script>
     let csrf = localStorage.getItem('csrf');
+    let allTenants = [];
+    let allTeam = [];
 
-    async function loadTenants() {
-      const res = await fetch('/chain-saas/api/platform/tenants', { headers: { 'X-CSRF-Token': csrf } });
-      if (res.status === 401 || res.status === 403) {
-        alert('You must be logged in as a Super Admin. Redirecting to login...');
-        return window.location.href = '/site/login.html';
-      }
+    async function loadData() {
+      // 1. Load Tenants
+      const tRes = await fetch('/chain-saas/api/platform/tenants', { headers: { 'X-CSRF-Token': csrf } });
+      if (tRes.status === 401 || tRes.status === 403) return window.location.href = '/chain-saas/site/login.html';
+      const tData = await tRes.json();
+      allTenants = tData.tenants;
       
-      const data = await res.json();
       const tbody = document.getElementById('tenant-rows');
       tbody.innerHTML = '';
       
-      data.tenants.forEach(t => {
+      // Populate Tenant dropdown for tasks
+      const tenantSelect = document.getElementById('task-tenant');
+      tenantSelect.innerHTML = '<option value="">None</option>';
+
+      allTenants.forEach(t => {
+        // Table row
         tbody.innerHTML += `
           <tr>
             <td>#${t.id}</td>
-            <td><strong>${t.business_name}</strong><br><small>${t.slug}</small></td>
+            <td><strong>${t.business_name}</strong></td>
             <td><span class="status-badge status-${t.status}">${t.status}</span></td>
             <td>${t.current_period_end ? new Date(t.current_period_end).toLocaleDateString() : 'None'}</td>
-            <td>
-              ${t.status !== 'active' ? `<button class="btn" onclick="markPaid(${t.id})" style="padding: 5px 10px; font-size: 12px;">Mark Cash Paid</button>` : ''}
+            <td class="flex-actions">
+              ${t.status !== 'active' ? `<button class="btn btn-sm" onclick="markPaid(${t.id})">Mark Cash Paid</button>` : ''}
+              <button class="btn btn-sm" style="background:#17a2b8;" onclick="extendTenant(${t.id})">+30 Days</button>
+              ${t.status !== 'suspended' ? `<button class="btn btn-sm" style="background:#dc3545;" onclick="suspendTenant(${t.id})">Suspend</button>` : ''}
             </td>
+          </tr>
+        `;
+        // Dropdown option
+        tenantSelect.innerHTML += `<option value="${t.id}">${t.business_name}</option>`;
+      });
+
+      // 2. Load Team
+      const teamRes = await fetch('/chain-saas/api/platform/team', { headers: { 'X-CSRF-Token': csrf } });
+      const teamData = await teamRes.json();
+      allTeam = teamData.team;
+      
+      const assigneeSelect = document.getElementById('task-assignee');
+      assigneeSelect.innerHTML = '';
+      allTeam.forEach(member => {
+        assigneeSelect.innerHTML += `<option value="${member.id}">${member.name} (${member.role})</option>`;
+      });
+
+      // 3. Load Tasks
+      const taskRes = await fetch('/chain-saas/api/platform/tasks', { headers: { 'X-CSRF-Token': csrf } });
+      const taskData = await taskRes.json();
+      
+      const taskTbody = document.getElementById('task-rows');
+      taskTbody.innerHTML = '';
+      taskData.tasks.forEach(task => {
+        taskTbody.innerHTML += `
+          <tr>
+            <td><strong>${task.title}</strong><br><small style="color:var(--muted)">${task.detail || ''}</small></td>
+            <td>${task.assignee_name}</td>
+            <td>${task.tenant_name || '-'}</td>
+            <td><span class="status-badge status-${task.status === 'open' ? 'pending' : 'active'}">${task.status}</span></td>
           </tr>
         `;
       });
     }
 
+    // --- Actions ---
     async function markPaid(tenantId) {
       if (!confirm('Mark this tenant as paid (Cash)? This will activate their subscription.')) return;
-      
-      const res = await fetch('/chain-saas/api/platform/tenants/' + tenantId + '/mark-paid', {
+      await fetch('/chain-saas/api/platform/tenants/' + tenantId + '/mark-paid', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
         body: JSON.stringify({ planId: 1, note: "Cash payment received" })
       });
+      loadData();
+    }
+
+    async function extendTenant(tenantId) {
+      if (!confirm('Extend subscription by 30 days?')) return;
+      await fetch('/chain-saas/api/platform/tenants/' + tenantId + '/extend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+        body: JSON.stringify({ days: 30 })
+      });
+      loadData();
+    }
+
+    async function suspendTenant(tenantId) {
+      if (!confirm('Suspend this tenant immediately?')) return;
+      await fetch('/chain-saas/api/platform/tenants/' + tenantId + '/suspend', {
+        method: 'POST',
+        headers: { 'X-CSRF-Token': csrf }
+      });
+      loadData();
+    }
+
+    function openTaskModal() {
+      document.getElementById('task-modal').style.display = 'flex';
+    }
+
+    async function saveTask() {
+      const payload = {
+        title: document.getElementById('task-title').value,
+        detail: document.getElementById('task-detail').value,
+        assignedTo: document.getElementById('task-assignee').value,
+        tenantId: document.getElementById('task-tenant').value || null
+      };
       
-      if (res.ok) {
-        alert('Tenant activated!');
-        loadTenants();
-      } else {
-        alert('Failed.');
-      }
+      await fetch('/chain-saas/api/platform/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+        body: JSON.stringify(payload)
+      });
+      
+      document.getElementById('task-modal').style.display = 'none';
+      loadData();
     }
 
     async function logout() {
       await fetch('/chain-saas/api/auth/logout', { method: 'POST', headers: { 'X-CSRF-Token': csrf } });
       localStorage.removeItem('csrf');
-      window.location.href = '/site/index.html';
+      window.location.href = '/chain-saas/site/index.html';
     }
 
-    loadTenants();
+    loadData();
   </script>
 </body>
 </html>
