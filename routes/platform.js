@@ -6,7 +6,39 @@ const { HttpError, wrap } = require("../apiUtil.js");
 
 const router = express.Router();
 
+
+const { verifyPassword } = require("../crypto.js");
+
+// SUPER ADMIN LOGIN (Public route)
+router.post("/login", wrap(async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) throw new HttpError(400, "Email and password required.");
+
+  const staff = await db.one("SELECT * FROM platform_staff WHERE email = ?", [email]);
+  if (!staff || !staff.active) throw new HttpError(401, "Invalid credentials.");
+
+  const valid = await verifyPassword(password, staff.password_hash);
+  if (!valid) throw new HttpError(401, "Invalid credentials.");
+
+  // Create session for platform_staff
+  const { csrf } = await auth.createSession({
+    subjectType: "platform_staff", 
+    subjectId: staff.id, 
+    tenantId: null, 
+    req, 
+    res
+  });
+
+  res.json({
+    ok: true, 
+    csrf,
+    user: { id: staff.id, name: staff.name, email: staff.email, role: "super_admin" }
+  });
+}));
+
+
 // Protect all platform routes: Must be Super Admin
+
 router.use(auth.requirePlatformStaff);
 router.use((req, res, next) => {
   if (req.platformStaff.role !== "super_admin" && req.platformStaff.role !== "billing") {

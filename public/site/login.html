@@ -46,31 +46,42 @@
       btn.textContent = 'Logging in...';
       btn.disabled = true;
 
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
       try {
-        const res = await fetch('/chain-saas/api/auth/login', {
+        // 1. Try Platform Staff Login first
+        let res = await fetch('/chain-saas/api/platform/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: document.getElementById('email').value,
-            password: document.getElementById('password').value
-          })
+          body: JSON.stringify({ email, password })
         });
-        const data = await res.json();
-        
+
+        let data = await res.json();
+
+        // 2. If not platform staff, try Tenant Login
+        if (!res.ok && res.status === 401) {
+          res = await fetch('/chain-saas/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+          });
+          data = await res.json();
+        }
+
         if (!res.ok) throw new Error(data.error || 'Login failed');
         
-        // Save CSRF for future requests
+        // Save CSRF
         localStorage.setItem('csrf', data.csrf);
         
-        // Route based on user role
+        // 3. Route based on user role
         if (data.user && data.user.role === 'super_admin') {
           window.location.href = '/chain-saas/site/superadmin.html';
         } else {
           window.location.href = '/chain-saas/site/dashboard.html';
         }
-      
-      } catch (e) {
-        err.textContent = e.message;
+      } catch (error) {
+        err.textContent = error.message;
         err.style.display = 'block';
         btn.textContent = 'Log In';
         btn.disabled = false;
