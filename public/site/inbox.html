@@ -2,177 +2,421 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Inbox — Chain SaaS</title>
-  <link rel="stylesheet" href="/chain-saas/site/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    body { overflow: hidden; height: 100vh; }
-    .layout { display: flex; height: calc(100vh - 65px); }
+    :root {
+      /* Neutral, tech-focused palette */
+      --bg: #f4f6f8;
+      --paper: #ffffff;
+      --ink: #1a1a1a;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --primary: #1e3a32; /* Deep tech green */
+      --primary-hover: #142821;
+      --gold: #c29b4e;
+      --gold-hover: #a8843f;
+      
+      /* WhatsApp thread colors */
+      --wa-bg: #e5ddd5;
+      --wa-pattern: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200' fill='none' stroke='%238a8a8a' stroke-opacity='.08' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M100 40l10 20h20l-15 15 5 20-20-10-20 10 5-20-15-15h20z'/><circle cx='50' cy='150' r='10'/><path d='M150 50l15 15-15 15-15-15z'/><path d='M40 60h20v20H40z'/><circle cx='160' cy='140' r='15'/><path d='M80 160l10 10 20-20'/></svg>");
+      
+      --radius: 8px;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+      --shadow-lg: 0 12px 32px rgba(0,0,0,0.12);
+      --font-head: "Cormorant Garamond", Georgia, serif;
+      --font-ui: "Poppins", system-ui, sans-serif;
+    }
     
-    /* Sidebar */
-    .sidebar { width: 340px; background: #fff; border-right: 1px solid #ddd; overflow-y: auto; display: flex; flex-direction: column; }
-    .sidebar-header { padding: 15px 20px; border-bottom: 1px solid #eee; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
-    .chat-item { padding: 15px 20px; border-bottom: 1px solid #f5f5f5; cursor: pointer; transition: 0.2s; }
-    .chat-item:hover, .chat-item.active { background: #f9f9f9; border-left: 3px solid var(--primary); }
-    .chat-item h4 { margin-bottom: 4px; font-size: 15px; color: #111; }
-    .chat-item p { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body { font-family: var(--font-ui); font-size: 14px; color: var(--ink); background: var(--bg); overflow: hidden; }
     
-    /* Chat Area */
-    .chat-area { flex: 1; display: flex; flex-direction: column; background: #efe8da; position: relative; }
-    .chat-header { background: #fff; padding: 15px 20px; border-bottom: 1px solid #ddd; font-weight: 600; box-shadow: 0 2px 5px rgba(0,0,0,.02); z-index: 10; }
-    .messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+    /* Topbar */
+    .topbar { height: 64px; background: var(--paper); border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; box-shadow: var(--shadow-sm); position: relative; z-index: 10; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-mark { font-family: var(--font-head); font-size: 26px; font-weight: 700; color: var(--primary); }
+    .brand-sub { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
+    .nav-links { display: flex; gap: 8px; align-items: center; }
+    .nav-link { text-decoration: none; color: var(--muted); font-size: 13px; font-weight: 500; padding: 8px 16px; border-radius: 6px; transition: 0.2s; }
+    .nav-link:hover { background: var(--bg); color: var(--ink); }
+    .nav-link.active { background: var(--primary); color: #fff; }
+    .btn-outline { background: transparent; border: 1px solid var(--line); color: var(--ink); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; transition: 0.2s; }
+    .btn-outline:hover { border-color: var(--ink); }
+
+    /* Main Layout */
+    .layout { display: grid; grid-template-columns: 320px minmax(0, 1fr) 340px; height: calc(100vh - 64px); background: var(--paper); }
     
-    .msg { max-width: 75%; padding: 10px 15px; border-radius: 8px; font-size: 14px; line-height: 1.4; box-shadow: 0 1px 2px rgba(0,0,0,.1); }
-    .msg.in { align-self: flex-start; background: #fff; border-top-left-radius: 0; }
-    .msg.out { align-self: flex-end; background: #d9f2cc; border-top-right-radius: 0; }
-    .msg.bot { align-self: flex-end; background: #f4ecd2; border-top-right-radius: 0; }
+    /* Left Sidebar */
+    .sidebar { border-right: 1px solid var(--line); display: flex; flex-direction: column; background: var(--paper); min-width: 0; }
+    .list-tools { padding: 16px; border-bottom: 1px solid var(--line); }
+    .search { width: 100%; padding: 10px 14px; background: var(--bg); border: 1px solid transparent; border-radius: 8px; font-size: 13px; transition: 0.2s; }
+    .search:focus { outline: none; background: #fff; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(194,155,78,0.15); }
     
-    .composer { background: #f0f0f0; padding: 15px 20px; display: flex; gap: 10px; border-top: 1px solid #ddd; }
-    .composer input { flex: 1; padding: 12px 20px; border: 1px solid #ccc; border-radius: 30px; font-size: 14px; outline: none; transition: 0.2s; }
-    .composer input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(36, 59, 50, 0.1); }
+    .filters { display: flex; gap: 6px; overflow-x: auto; padding: 12px 16px 4px; scrollbar-width: none; }
+    .filters::-webkit-scrollbar { display: none; }
+    .filter-btn { flex: none; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--line); background: transparent; font-size: 11px; font-weight: 500; color: var(--muted); cursor: pointer; transition: 0.2s; }
+    .filter-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .filter-btn:hover:not(.active) { border-color: var(--muted); }
     
-    .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--muted); }
-    .empty-state h2 { color: #333; margin-bottom: 10px; }
+    .chat-list { flex: 1; overflow-y: auto; }
+    .chat-row { display: flex; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); cursor: pointer; transition: 0.15s; }
+    .chat-row:hover { background: #fafafa; }
+    .chat-row.active { background: #f0f4f2; border-left: 3px solid var(--primary); }
+    .chat-row .avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-family: var(--font-head); font-weight: 700; font-size: 16px; flex: none; }
+    .chat-info { flex: 1; min-width: 0; }
+    .chat-name { font-weight: 500; font-size: 14px; display: flex; justify-content: space-between; margin-bottom: 2px; }
+    .chat-time { font-size: 11px; color: var(--muted); }
+    .chat-preview { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .chat-badges { display: flex; gap: 4px; margin-top: 6px; }
+    .badge-pill { padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+    .badge-human { background: #fef3c7; color: #92400e; }
+    .badge-bot { background: #e5e7eb; color: #4b5563; }
+    .badge-escalated { background: #fee2e2; color: #991b1b; }
+    
+    /* Middle Thread */
+    .thread { display: flex; flex-direction: column; background: var(--wa-bg) var(--wa-pattern); min-width: 0; position: relative; }
+    .thread-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); text-align: center; padding: 20px; }
+    .thread-empty h2 { font-family: var(--font-head); font-size: 32px; color: var(--primary); margin-bottom: 10px; }
+    
+    .thread-header { background: var(--paper); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); box-shadow: var(--shadow-sm); z-index: 5; }
+    .th-user { display: flex; align-items: center; gap: 12px; }
+    .th-name { font-weight: 600; font-size: 15px; }
+    .th-sub { font-size: 12px; color: var(--muted); }
+    
+    .messages { flex: 1; overflow-y: auto; padding: 20px 40px; display: flex; flex-direction: column; gap: 2px; }
+    .msg-row { display: flex; flex-direction: column; max-width: 75%; position: relative; }
+    .msg-row.in { align-self: flex-start; }
+    .msg-row.out { align-self: flex-end; align-items: flex-end; }
+    .msg-row.tail { margin-top: 12px; }
+    
+    .bubble { background: var(--paper); padding: 8px 12px 6px; border-radius: 8px; box-shadow: var(--shadow-sm); font-size: 14px; line-height: 1.4; word-wrap: break-word; position: relative; }
+    .msg-row.in .bubble { border-top-left-radius: 0; }
+    .msg-row.out .bubble { background: #dcf8c6; border-top-right-radius: 0; }
+    .msg-row.bot .bubble { background: #fef3c7; }
+    .msg-sender { font-size: 10px; font-weight: 600; color: var(--gold); text-transform: uppercase; margin-bottom: 2px; }
+    .msg-time { font-size: 10px; color: var(--muted); float: right; margin: 4px 0 0 12px; }
+    
+    .composer { background: #f0f0f0; padding: 12px 20px; border-top: 1px solid var(--line); display: flex; gap: 12px; align-items: flex-end; }
+    .composer textarea { flex: 1; resize: none; border: 1px solid var(--line); border-radius: 20px; padding: 12px 16px; font-family: inherit; font-size: 14px; outline: none; max-height: 120px; }
+    .composer textarea:focus { border-color: var(--gold); }
+    .btn-send { background: var(--primary); color: #fff; border: none; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; flex: none; }
+    .btn-send:hover { background: var(--primary-hover); transform: scale(1.05); }
+    .btn-send:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+
+    /* Right Panel */
+    .details { border-left: 1px solid var(--line); background: var(--paper); display: flex; flex-direction: column; overflow-y: auto; }
+    .details-head { padding: 20px; text-align: center; border-bottom: 1px solid var(--line); }
+    .details-avatar { width: 72px; height: 72px; border-radius: 50%; background: var(--primary); color: #fff; font-family: var(--font-head); font-size: 28px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; }
+    .details-name { font-family: var(--font-head); font-size: 24px; font-weight: 600; color: var(--primary); margin-bottom: 4px; }
+    .details-phone { color: var(--muted); font-size: 13px; }
+    .d-section { padding: 16px 20px; border-bottom: 1px solid var(--line); }
+    .d-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 12px; display: flex; justify-content: space-between; }
+    .d-item { background: #fafafa; border: 1px solid var(--line); border-radius: 6px; padding: 10px; margin-bottom: 8px; font-size: 13px; }
+    .d-item-title { font-weight: 500; margin-bottom: 4px; }
+    .d-item-sub { font-size: 12px; color: var(--muted); }
+    
+    /* Toast */
+    #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 10px; }
+    .toast { background: #1a1a1a; color: #fff; padding: 12px 20px; border-radius: 8px; box-shadow: var(--shadow-lg); font-size: 13px; font-weight: 500; animation: slideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; border-left: 4px solid var(--gold); }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
   </style>
 </head>
 <body>
   <div id="toast-container"></div>
 
-  <!-- Global Navigation -->
-  <nav class="nav-bar">
-    <div class="nav-brand">Chain SaaS</div>
+  <nav class="topbar">
+    <div class="brand">
+      <div class="brand-mark">Chain <span style="color: var(--gold); font-style: italic;">SaaS</span></div>
+      <div class="brand-sub">Tech Support</div>
+    </div>
     <div class="nav-links">
       <a href="/chain-saas/site/dashboard.html" class="nav-link">Dashboard</a>
       <a href="/chain-saas/site/inbox.html" class="nav-link active">Inbox</a>
       <a href="/chain-saas/site/settings.html" class="nav-link">Settings</a>
-      <button onclick="logout()" class="btn" style="background: #f0f0f0; color: #333; margin-left: 15px; padding: 8px 16px;">Log Out</button>
+      <button onclick="logout()" class="btn-outline" style="margin-left: 12px;">Log Out</button>
     </div>
   </nav>
 
   <div class="layout">
+    <!-- Left Sidebar -->
     <div class="sidebar">
-      <div class="sidebar-header">
-        <span>Conversations</span>
-        <button class="btn" onclick="seedDemo()" style="font-size:11px; padding: 4px 8px; background:#eee; color:#333;">+ Seed Demo</button>
+      <div class="list-tools">
+        <input type="text" id="search-input" class="search" placeholder="Search name or phone..." oninput="loadChats()">
+        <div class="filters">
+          <button class="filter-btn active" onclick="setFilter('active', this)">Active</button>
+          <button class="filter-btn" onclick="setFilter('unread', this)">Unread</button>
+          <button class="filter-btn" onclick="setFilter('human', this)">Human</button>
+          <button class="filter-btn" onclick="setFilter('escalated', this)">Escalated</button>
+        </div>
       </div>
-      <div id="chat-list" style="flex:1; overflow-y:auto;">
-        <!-- Chats load here -->
+      <div class="chat-list" id="chat-list">
+        <!-- Loaded via JS -->
+      </div>
+      <div style="padding: 12px; border-top: 1px solid var(--line); text-align: center;">
+        <button class="btn-outline" onclick="seedDemo()" style="font-size: 11px; padding: 6px 12px;">+ Generate Demo Chats</button>
       </div>
     </div>
-    
-    <div class="chat-area">
-      <div id="chat-empty" class="empty-state">
-        <h2>Your Inbox is clear</h2>
-        <p>Click "Seed Demo" to generate fake data and test the UI.</p>
+
+    <!-- Middle Thread -->
+    <div class="thread">
+      <div class="thread-empty" id="thread-empty">
+        <h2>No chat selected</h2>
+        <p>Select a conversation to view messages.</p>
       </div>
       
-      <div id="chat-box" style="display:none; flex-direction:column; height:100%;">
-        <div class="chat-header" id="chat-header"></div>
-        <div class="messages" id="messages"></div>
-        <div class="composer">
-          <input type="text" id="reply-input" placeholder="Type a reply and press Enter..." onkeypress="if(event.key==='Enter') sendReply()">
-          <button class="btn" onclick="sendReply()" style="background: var(--primary); color:#fff; border-radius:30px; padding: 0 25px;">Send</button>
+      <div id="thread-active" style="display: none; flex-direction: column; height: 100%;">
+        <div class="thread-header">
+          <div class="th-user">
+            <div class="avatar" id="th-avatar" style="width: 40px; height: 40px; font-size: 14px; background: var(--primary); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">?</div>
+            <div>
+              <div class="th-name" id="th-name">Loading...</div>
+              <div class="th-sub" id="th-sub">+256...</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn-outline" id="btn-takeover" onclick="takeover()" style="font-size: 11px; padding: 6px 12px;">Take Over</button>
+            <button class="btn-outline" id="btn-resolve" onclick="resolveChat()" style="font-size: 11px; padding: 6px 12px; background: var(--primary); color: white; border: none;">Resolve</button>
+          </div>
         </div>
+        
+        <div class="messages" id="messages">
+          <!-- Messages load here -->
+        </div>
+        
+        <div class="composer">
+          <textarea id="composer-input" rows="1" placeholder="Type a reply..." onkeydown="handleKey(event)" oninput="autoGrow(this)"></textarea>
+          <button class="btn-send" onclick="sendReply()" id="btn-send">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Details Panel -->
+    <div class="details" id="details-panel">
+      <div class="thread-empty" style="padding: 40px 20px;">
+        <p>Customer details will appear here.</p>
       </div>
     </div>
   </div>
 
   <script>
     let csrf = localStorage.getItem('csrf');
+    let currentFilter = 'active';
     let currentPhone = null;
 
-    function showToast(message, type = 'success') {
-      const container = document.getElementById('toast-container');
-      const toast = document.createElement('div');
-      toast.className = `toast ${type}`;
-      toast.innerHTML = `<span>${type === 'success' ? '✓' : '✕'}</span> ${message}`;
-      container.appendChild(toast);
-      setTimeout(() => { toast.classList.add('hiding'); setTimeout(() => toast.remove(), 300); }, 3000);
+    // --- UI Helpers ---
+    function showToast(msg, type = 'success') {
+      const el = document.createElement('div');
+      el.className = 'toast';
+      el.style.borderLeftColor = type === 'error' ? '#dc3545' : 'var(--gold)';
+      el.textContent = msg;
+      document.getElementById('toast-container').appendChild(el);
+      setTimeout(() => el.remove(), 3000);
     }
 
+    function autoGrow(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    }
+
+    function handleKey(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendReply();
+      }
+    }
+
+    // --- Load Chats ---
     async function loadChats() {
-      const res = await fetch('/chain-saas/api/chats/conversations', { headers: { 'X-CSRF-Token': csrf } });
+      const search = document.getElementById('search-input').value;
+      const res = await fetch(`/chain-saas/api/chats/conversations?filter=${currentFilter}&search=${search}`, { headers: { 'X-CSRF-Token': csrf } });
       if (!res.ok) return window.location.href = '/chain-saas/site/login.html';
       
       const { conversations } = await res.json();
       const list = document.getElementById('chat-list');
       list.innerHTML = '';
-      
+
       if (conversations.length === 0) {
-        list.innerHTML = '<p style="padding:20px; color:#888; text-align:center;">No messages yet.</p>';
+        list.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--muted); font-size: 13px;">No chats found.</div>';
         return;
       }
 
       conversations.forEach(c => {
+        const initials = c.name ? c.name.substring(0, 2).toUpperCase() : '#';
+        const activeClass = currentPhone === c.phone ? 'active' : '';
+        const badges = [];
+        if (c.mode === 'human') badges.push('<span class="badge-pill badge-human">Human</span>');
+        else badges.push('<span class="badge-pill badge-bot">Bot</span>');
+        if (c.status === 'escalated') badges.push('<span class="badge-pill badge-escalated">Escalated</span>');
+
         list.innerHTML += `
-          <div class="chat-item" onclick="openChat('${c.phone}', this)">
-            <h4>+${c.phone}</h4>
-            <p>${c.last_message_preview || 'No messages'}</p>
+          <div class="chat-row ${activeClass}" onclick="openChat('${c.phone}')">
+            <div class="avatar">${initials}</div>
+            <div class="chat-info">
+              <div class="chat-name">
+                <span>${c.name || '+' + c.phone}</span>
+                <span class="chat-time">${new Date(c.last_message_at || Date.now()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+              </div>
+              <div class="chat-preview">${c.last_message_preview || 'No messages yet'}</div>
+              <div class="chat-badges">${badges.join('')}</div>
+            </div>
           </div>
         `;
       });
     }
 
-    async function openChat(phone, el) {
+    function setFilter(f, btn) {
+      currentFilter = f;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      loadChats();
+    }
+
+    // --- Open Chat ---
+    async function openChat(phone) {
       currentPhone = phone;
-      
-      // Highlight active chat
-      document.querySelectorAll('.chat-item').forEach(i => i.classList.remove('active'));
-      if (el) el.classList.add('active');
+      loadChats(); // Re-render list to show active state
 
-      document.getElementById('chat-empty').style.display = 'none';
-      document.getElementById('chat-box').style.display = 'flex';
-      document.getElementById('chat-header').textContent = '+' + phone;
+      document.getElementById('thread-empty').style.display = 'none';
+      document.getElementById('thread-active').style.display = 'flex';
 
+      // Load Details
+      const res = await fetch('/chain-saas/api/chats/conversations/' + phone, { headers: { 'X-CSRF-Token': csrf } });
+      if (res.ok) {
+        const { conversation, customer, orders, issues } = await res.json();
+        
+        // Update Header
+        document.getElementById('th-name').textContent = conversation.name || '+' + phone;
+        document.getElementById('th-sub').textContent = '+' + phone;
+        
+        // Update Right Panel
+        const initials = conversation.name ? conversation.name.substring(0, 2).toUpperCase() : '#';
+        let orderHtml = orders.map(o => `<div class="d-item"><div class="d-item-title">${o.ref}</div><div class="d-item-sub">${o.items || 'No items'}</div></div>`).join('');
+        let issueHtml = issues.map(i => `<div class="d-item"><div class="d-item-title">${i.ref}</div><div class="d-item-sub">${i.summary}</div></div>`).join('');
+        
+        document.getElementById('details-panel').innerHTML = `
+          <div class="details-head">
+            <div class="details-avatar">${initials}</div>
+            <div class="details-name">${conversation.name || 'Unknown'}</div>
+            <div class="details-phone">+${phone}</div>
+          </div>
+          <div class="d-section">
+            <div class="d-title">Tickets & Issues <span>${issues.length}</span></div>
+            ${issueHtml || '<div class="d-item-sub">No open tickets.</div>'}
+          </div>
+          <div class="d-section">
+            <div class="d-title">Recent Orders <span>${orders.length}</span></div>
+            ${orderHtml || '<div class="d-item-sub">No recent orders.</div>'}
+          </div>
+        `;
+        
+        // Update Buttons
+        const btnTakeover = document.getElementById('btn-takeover');
+        if (conversation.mode === 'human') {
+          btnTakeover.textContent = 'Handback to Bot';
+          btnTakeover.onclick = handback;
+        } else {
+          btnTakeover.textContent = 'Take Over';
+          btnTakeover.onclick = takeover;
+        }
+      }
+
+      loadMessages(phone);
+    }
+
+    // --- Messages ---
+    async function loadMessages(phone) {
       const res = await fetch('/chain-saas/api/chats/conversations/' + phone + '/messages', { headers: { 'X-CSRF-Token': csrf } });
+      if (!res.ok) return;
+      
       const { messages } = await res.json();
-      
-      const msgArea = document.getElementById('messages');
-      msgArea.innerHTML = '';
-      
+      const msgContainer = document.getElementById('messages');
+      msgContainer.innerHTML = '';
+
       messages.forEach(m => {
-        let senderClass = m.sender_type === 'customer' ? 'in' : (m.sender_type === 'bot' ? 'out bot' : 'out');
-        msgArea.innerHTML += `
-          <div class="msg ${senderClass}">
-            ${m.body}
+        const time = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const sender = m.sender_type === 'customer' ? '' : `<div class="msg-sender">${m.sender_type}</div>`;
+        const dirClass = m.direction === 'in' ? 'in' : (m.sender_type === 'bot' ? 'out bot' : 'out');
+        
+        msgContainer.innerHTML += `
+          <div class="msg-row ${dirClass}">
+            <div class="bubble">
+              ${sender}
+              ${m.body}
+              <span class="msg-time">${time}</span>
+            </div>
           </div>
         `;
       });
-      msgArea.scrollTop = msgArea.scrollHeight;
+      msgContainer.scrollTop = msgContainer.scrollHeight;
     }
 
     async function sendReply() {
       if (!currentPhone) return;
-      const input = document.getElementById('reply-input');
+      const input = document.getElementById('composer-input');
       const text = input.value.trim();
       if (!text) return;
 
-      input.value = ''; // Clear immediately for better UX
-      
-      const res = await fetch('/chain-saas/api/chats/conversations/' + currentPhone + '/reply', {
+      input.disabled = true;
+      document.getElementById('btn-send').disabled = true;
+
+      const res = await fetch('/chain-saas/api/chats/conversations/' + currentPhone + '/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
         body: JSON.stringify({ text })
       });
 
       if (res.ok) {
-        openChat(currentPhone); // Reload thread
+        input.value = '';
+        autoGrow(input);
+        loadMessages(currentPhone);
+        loadChats();
       } else {
-        showToast('Failed to send message.', 'error');
-        input.value = text; // Restore text on failure
+        showToast('Failed to send message', 'error');
       }
+
+      input.disabled = false;
+      document.getElementById('btn-send').disabled = false;
+      input.focus();
+    }
+
+    // --- Actions ---
+    async function takeover() {
+      if (!currentPhone) return;
+      await fetch(`/chain-saas/api/chats/conversations/${currentPhone}/takeover`, { method: 'POST', headers: { 'X-CSRF-Token': csrf } });
+      showToast('You are now handling this chat.');
+      openChat(currentPhone);
+    }
+
+    async function handback() {
+      if (!currentPhone) return;
+      await fetch(`/chain-saas/api/chats/conversations/${currentPhone}/handback`, { method: 'POST', headers: { 'X-CSRF-Token': csrf } });
+      showToast('Bot has resumed.');
+      openChat(currentPhone);
+    }
+
+    async function resolveChat() {
+      if (!currentPhone) return;
+      await fetch(`/chain-saas/api/chats/conversations/${currentPhone}/resolve`, { method: 'POST', headers: { 'X-CSRF-Token': csrf } });
+      showToast('Chat marked as resolved.');
+      currentPhone = null;
+      document.getElementById('thread-active').style.display = 'none';
+      document.getElementById('thread-empty').style.display = 'flex';
+      document.getElementById('details-panel').innerHTML = '<div class="thread-empty" style="padding: 40px 20px;"><p>Customer details will appear here.</p></div>';
+      loadChats();
     }
 
     async function seedDemo() {
-      showToast('Generating demo data...', 'success');
-      const res = await fetch('/chain-saas/api/chats/seed-demo', {
-        method: 'POST',
-        headers: { 'X-CSRF-Token': csrf }
-      });
-      if (res.ok) {
-        showToast('Demo data generated!');
-        loadChats();
-      }
+      showToast('Generating demo data...');
+      await fetch('/chain-saas/api/chats/seed-demo', { method: 'POST', headers: { 'X-CSRF-Token': csrf } });
+      showToast('Demo data generated!');
+      loadChats();
     }
 
     async function logout() {
@@ -181,8 +425,10 @@
       window.location.href = '/chain-saas/site/index.html';
     }
 
+    // --- Init ---
     loadChats();
-    setInterval(loadChats, 10000); // Light polling
+    // Poll every 10 seconds for new messages
+    setInterval(() => { if (currentPhone) loadMessages(currentPhone); loadChats(); }, 10000);
   </script>
 </body>
 </html>
