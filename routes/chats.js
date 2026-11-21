@@ -184,4 +184,111 @@ router.post("/seed-demo", auth.requireAuth, wrap(async (req, res) => {
   res.json({ ok: true });
 }));
 
+
+// ==========================================
+// GLOBAL LISTS (Tickets, Orders, Appointments)
+// ==========================================
+
+router.get("/tickets", auth.requireAuth, wrap(async (req, res) => {
+  const tickets = await db.all(`
+    SELECT i.*, c.name AS customer_name 
+    FROM issues i
+    LEFT JOIN (SELECT phone, COALESCE(display_name, whatsapp_name) AS name FROM customers WHERE tenant_id = ?) c 
+      ON c.phone = i.phone
+    WHERE i.tenant_id = ? 
+    ORDER BY i.created_at DESC LIMIT 50
+  `, [req.user.tenant_id, req.user.tenant_id]);
+  res.json({ tickets });
+}));
+
+router.get("/orders", auth.requireAuth, wrap(async (req, res) => {
+  const orders = await db.all(`
+    SELECT o.*, c.name AS customer_name 
+    FROM orders o
+    LEFT JOIN (SELECT phone, COALESCE(display_name, whatsapp_name) AS name FROM customers WHERE tenant_id = ?) c 
+      ON c.phone = o.phone
+    WHERE o.tenant_id = ? 
+    ORDER BY o.created_at DESC LIMIT 50
+  `, [req.user.tenant_id, req.user.tenant_id]);
+  res.json({ orders });
+}));
+
+router.get("/appointments", auth.requireAuth, wrap(async (req, res) => {
+  const appts = await db.all(`
+    SELECT a.*, c.name AS customer_name 
+    FROM appointments a
+    LEFT JOIN (SELECT phone, COALESCE(display_name, whatsapp_name) AS name FROM customers WHERE tenant_id = ?) c 
+      ON c.phone = a.phone
+    WHERE a.tenant_id = ? 
+    ORDER BY a.appt_date DESC LIMIT 50
+  `, [req.user.tenant_id, req.user.tenant_id]);
+  res.json({ appointments: appts });
+}));
+
+// ==========================================
+// MEDIA UPLOAD
+// ==========================================
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
+
+const UPLOAD_DIR = path.join(__dirname, "../public/uploads/chat");
+if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+
+const upload = multer({ dest: UPLOAD_DIR });
+
+router.post("/conversations/:phone/media", auth.requireAuth, upload.single("file"), wrap(async (req, res) => {
+  if (!req.file) throw new HttpError(400, "No file uploaded.");
+  const tenantId = req.user.tenant_id;
+  const phone = req.params.phone;
+  
+  // 1. Get WhatsApp Connection
+  const conn = await db.one("SELECT phone_number_id, access_token_enc FROM whatsapp_connection WHERE tenant_id = ?", [tenantId]);
+  if (!conn) throw new HttpError(400, "WhatsApp not connected.");
+
+  // 2. Upload media to Meta (Requires a multipart form-data request)
+  const accessToken = cryptoHelper.decryptString(conn.access_token_enc);
+  const FormData = require("form-data");
+  const form = new FormData();
+  form.append("file", fs.createReadStream(req.file.path), req.file.originalname);
+  form.append("type", req.file.mimetype);
+  form.append("messaging_product", "whatsapp");
+
+  try {
+    const uploadRes = await axios.post(
+      `https://graph.facebook.com/${GRAPH_VERSION}/${conn.phone_number_id}/media`,
+      form,
+      { headers: { ...form.getHeaders(), Authorization: `Bearer ${accessToken}` } }
+    );
+    const mediaId = uploadRes.data.id;
+
+    // 3. Send the Media Message
+    await axios.post(
+      `https://graph.facebook.com/${GRAPH_VERSION}/${conn.phone_number_id}/messages`,
+      { messaging_product: "whatsapp", to: phone, type: "image", image: { id: mediaId } },
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+
+    // 4. Save to DB
+    const result = await db.run(`
+      INSERT INTO messages (tenant_id, phone, direction, sender_type, staff_id, msg_type, body, has_media, media_mime, media_name, created_at)
+      VALUES (?, ?, 'out', 'staff', ?, 'image', '[Image Attached]', 1, ?, ?, UTC_TIMESTAMP(3))
+    `, [tenantId, phone, req.user.id, req.file.mimetype, req.file.originalname]);
+
+    await db.run(`
+      UPDATE conversations SET last_message_at = UTC_TIMESTAMP(3), last_message_preview = '[Image Attached]', mode = 'human' 
+      WHERE tenant_id = ? AND phone = ?
+    `, [tenantId, phone]);
+
+    const newMessage = await db.one("SELECT * FROM messages WHERE id = ?", [result.insertId]);
+    res.status(201).json({ messages: [newMessage] });
+
+  } catch (err) {
+    console.error("[Meta Media Error]", err.response?.data || err.message);
+    throw new HttpError(502, "Failed to send media via WhatsApp.");
+  } finally {
+    fs.unlinkSync(req.file.path); // Clean up local file after sending
+  }
+}));
+
 module.exports = router;

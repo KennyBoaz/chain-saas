@@ -9,29 +9,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      /* Neutral, tech-focused palette */
-      --bg: #f4f6f8;
-      --paper: #ffffff;
-      --ink: #1a1a1a;
-      --muted: #6b7280;
-      --line: #e5e7eb;
-      --primary: #1e3a32; /* Deep tech green */
-      --primary-hover: #142821;
-      --gold: #c29b4e;
-      --gold-hover: #a8843f;
-      
-      /* WhatsApp thread colors */
+      --bg: #f4f6f8; --paper: #ffffff; --ink: #1a1a1a; --muted: #6b7280; --line: #e5e7eb;
+      --primary: #1e3a32; --primary-hover: #142821; --gold: #c29b4e; --gold-hover: #a8843f;
       --wa-bg: #e5ddd5;
       --wa-pattern: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200' fill='none' stroke='%238a8a8a' stroke-opacity='.08' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M100 40l10 20h20l-15 15 5 20-20-10-20 10 5-20-15-15h20z'/><circle cx='50' cy='150' r='10'/><path d='M150 50l15 15-15 15-15-15z'/><path d='M40 60h20v20H40z'/><circle cx='160' cy='140' r='15'/><path d='M80 160l10 10 20-20'/></svg>");
-      
-      --radius: 8px;
-      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
-      --shadow-lg: 0 12px 32px rgba(0,0,0,0.12);
-      --font-head: "Cormorant Garamond", Georgia, serif;
-      --font-ui: "Poppins", system-ui, sans-serif;
+      --radius: 8px; --shadow-sm: 0 1px 2px rgba(0,0,0,0.05); --shadow-md: 0 4px 12px rgba(0,0,0,0.08); --shadow-lg: 0 12px 32px rgba(0,0,0,0.12);
+      --font-head: "Cormorant Garamond", Georgia, serif; --font-ui: "Poppins", system-ui, sans-serif;
     }
-    
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; }
     body { font-family: var(--font-ui); font-size: 14px; color: var(--ink); background: var(--bg); overflow: hidden; }
@@ -48,15 +32,24 @@
     .btn-outline { background: transparent; border: 1px solid var(--line); color: var(--ink); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; transition: 0.2s; }
     .btn-outline:hover { border-color: var(--ink); }
 
+    /* Top Toggle Bar */
+    .subnav { height: 50px; background: var(--paper); border-bottom: 1px solid var(--line); display: flex; align-items: stretch; padding: 0 24px; gap: 24px; }
+    .subnav-item { display: flex; align-items: center; font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: 0.2s; }
+    .subnav-item:hover { color: var(--ink); }
+    .subnav-item.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .subnav-badge { background: var(--gold); color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 8px; font-weight: 600; }
+
     /* Main Layout */
-    .layout { display: grid; grid-template-columns: 320px minmax(0, 1fr) 340px; height: calc(100vh - 64px); background: var(--paper); }
-    
-    /* Left Sidebar */
+    .main-container { height: calc(100vh - 114px); }
+    .view { display: none; height: 100%; }
+    .view.active { display: block; }
+
+    /* Chats Layout */
+    .layout { display: grid; grid-template-columns: 320px minmax(0, 1fr) 340px; height: 100%; background: var(--paper); }
     .sidebar { border-right: 1px solid var(--line); display: flex; flex-direction: column; background: var(--paper); min-width: 0; }
     .list-tools { padding: 16px; border-bottom: 1px solid var(--line); }
     .search { width: 100%; padding: 10px 14px; background: var(--bg); border: 1px solid transparent; border-radius: 8px; font-size: 13px; transition: 0.2s; }
     .search:focus { outline: none; background: #fff; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(194,155,78,0.15); }
-    
     .filters { display: flex; gap: 6px; overflow-x: auto; padding: 12px 16px 4px; scrollbar-width: none; }
     .filters::-webkit-scrollbar { display: none; }
     .filter-btn { flex: none; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--line); background: transparent; font-size: 11px; font-weight: 500; color: var(--muted); cursor: pointer; transition: 0.2s; }
@@ -77,12 +70,11 @@
     .badge-human { background: #fef3c7; color: #92400e; }
     .badge-bot { background: #e5e7eb; color: #4b5563; }
     .badge-escalated { background: #fee2e2; color: #991b1b; }
-    
+
     /* Middle Thread */
     .thread { display: flex; flex-direction: column; background: var(--wa-bg) var(--wa-pattern); min-width: 0; position: relative; }
     .thread-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); text-align: center; padding: 20px; }
     .thread-empty h2 { font-family: var(--font-head); font-size: 32px; color: var(--primary); margin-bottom: 10px; }
-    
     .thread-header { background: var(--paper); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); box-shadow: var(--shadow-sm); z-index: 5; }
     .th-user { display: flex; align-items: center; gap: 12px; }
     .th-name { font-weight: 600; font-size: 15px; }
@@ -93,7 +85,6 @@
     .msg-row.in { align-self: flex-start; }
     .msg-row.out { align-self: flex-end; align-items: flex-end; }
     .msg-row.tail { margin-top: 12px; }
-    
     .bubble { background: var(--paper); padding: 8px 12px 6px; border-radius: 8px; box-shadow: var(--shadow-sm); font-size: 14px; line-height: 1.4; word-wrap: break-word; position: relative; }
     .msg-row.in .bubble { border-top-left-radius: 0; }
     .msg-row.out .bubble { background: #dcf8c6; border-top-right-radius: 0; }
@@ -101,9 +92,11 @@
     .msg-sender { font-size: 10px; font-weight: 600; color: var(--gold); text-transform: uppercase; margin-bottom: 2px; }
     .msg-time { font-size: 10px; color: var(--muted); float: right; margin: 4px 0 0 12px; }
     
-    .composer { background: #f0f0f0; padding: 12px 20px; border-top: 1px solid var(--line); display: flex; gap: 12px; align-items: flex-end; }
+    .composer { background: #f0f0f0; padding: 12px 20px; border-top: 1px solid var(--line); display: flex; gap: 12px; align-items: center; }
     .composer textarea { flex: 1; resize: none; border: 1px solid var(--line); border-radius: 20px; padding: 12px 16px; font-family: inherit; font-size: 14px; outline: none; max-height: 120px; }
     .composer textarea:focus { border-color: var(--gold); }
+    .attach-btn { background: transparent; border: none; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 8px; border-radius: 50%; transition: 0.2s; }
+    .attach-btn:hover { background: #e0e0e0; color: var(--ink); }
     .btn-send { background: var(--primary); color: #fff; border: none; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; flex: none; }
     .btn-send:hover { background: var(--primary-hover); transform: scale(1.05); }
     .btn-send:disabled { background: #ccc; cursor: not-allowed; transform: none; }
@@ -119,6 +112,20 @@
     .d-item { background: #fafafa; border: 1px solid var(--line); border-radius: 6px; padding: 10px; margin-bottom: 8px; font-size: 13px; }
     .d-item-title { font-weight: 500; margin-bottom: 4px; }
     .d-item-sub { font-size: 12px; color: var(--muted); }
+
+    /* Context Menu */
+    #context-menu { position: fixed; z-index: 1000; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow-lg); padding: 6px; min-width: 160px; display: none; flex-direction: column; }
+    .ctx-item { padding: 8px 12px; font-size: 13px; color: var(--ink); cursor: pointer; border-radius: 4px; display: flex; align-items: center; gap: 8px; }
+    .ctx-item:hover { background: var(--bg); }
+
+    /* Tables for Orders, Tickets, Appointments */
+    .table-view { padding: 32px; height: 100%; overflow-y: auto; background: var(--bg); }
+    .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .table-header h2 { font-family: var(--font-head); font-size: 32px; color: var(--primary); margin: 0; }
+    .data-table { width: 100%; border-collapse: collapse; background: var(--paper); border-radius: 8px; overflow: hidden; box-shadow: var(--shadow-md); }
+    .data-table th { background: #fafafa; text-align: left; padding: 12px 16px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); border-bottom: 1px solid var(--line); }
+    .data-table td { padding: 16px; border-bottom: 1px solid var(--line); font-size: 14px; }
+    .data-table tr:hover { background: #fafafa; }
     
     /* Toast */
     #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 10px; }
@@ -128,6 +135,11 @@
 </head>
 <body>
   <div id="toast-container"></div>
+  <div id="context-menu">
+    <div class="ctx-item" onclick="copyMessage()">Copy Text</div>
+    <div class="ctx-item" onclick="replyMessage()">Reply</div>
+    <div class="ctx-item" onclick="reactMessage()">React 👍</div>
+  </div>
 
   <nav class="topbar">
     <div class="brand">
@@ -142,65 +154,104 @@
     </div>
   </nav>
 
-  <div class="layout">
-    <!-- Left Sidebar -->
-    <div class="sidebar">
-      <div class="list-tools">
-        <input type="text" id="search-input" class="search" placeholder="Search name or phone..." oninput="loadChats()">
-        <div class="filters">
-          <button class="filter-btn active" onclick="setFilter('active', this)">Active</button>
-          <button class="filter-btn" onclick="setFilter('unread', this)">Unread</button>
-          <button class="filter-btn" onclick="setFilter('human', this)">Human</button>
-          <button class="filter-btn" onclick="setFilter('escalated', this)">Escalated</button>
-        </div>
-      </div>
-      <div class="chat-list" id="chat-list">
-        <!-- Loaded via JS -->
-      </div>
-      <div style="padding: 12px; border-top: 1px solid var(--line); text-align: center;">
-        <button class="btn-outline" onclick="seedDemo()" style="font-size: 11px; padding: 6px 12px;">+ Generate Demo Chats</button>
-      </div>
-    </div>
+  <div class="subnav">
+    <div class="subnav-item active" onclick="switchView('chats', this)" id="nav-chats">Chats</div>
+    <div class="subnav-item" onclick="switchView('tickets', this)" id="nav-tickets">Tickets <span class="subnav-badge" id="count-tickets">0</span></div>
+    <div class="subnav-item" onclick="switchView('orders', this)" id="nav-orders">Orders <span class="subnav-badge" id="count-orders">0</span></div>
+    <div class="subnav-item" onclick="switchView('appointments', this)" id="nav-appointments">Appointments <span class="subnav-badge" id="count-appointments">0</span></div>
+  </div>
 
-    <!-- Middle Thread -->
-    <div class="thread">
-      <div class="thread-empty" id="thread-empty">
-        <h2>No chat selected</h2>
-        <p>Select a conversation to view messages.</p>
-      </div>
-      
-      <div id="thread-active" style="display: none; flex-direction: column; height: 100%;">
-        <div class="thread-header">
-          <div class="th-user">
-            <div class="avatar" id="th-avatar" style="width: 40px; height: 40px; font-size: 14px; background: var(--primary); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">?</div>
-            <div>
-              <div class="th-name" id="th-name">Loading...</div>
-              <div class="th-sub" id="th-sub">+256...</div>
+  <div class="main-container">
+    <!-- CHATS VIEW -->
+    <div class="view active" id="view-chats">
+      <div class="layout">
+        <div class="sidebar">
+          <div class="list-tools">
+            <input type="text" id="search-input" class="search" placeholder="Search name or phone..." oninput="loadChats()">
+            <div class="filters">
+              <button class="filter-btn active" onclick="setFilter('active', this)">Active</button>
+              <button class="filter-btn" onclick="setFilter('unread', this)">Unread</button>
+              <button class="filter-btn" onclick="setFilter('human', this)">Human</button>
+              <button class="filter-btn" onclick="setFilter('escalated', this)">Escalated</button>
             </div>
           </div>
-          <div style="display: flex; gap: 8px;">
-            <button class="btn-outline" id="btn-takeover" onclick="takeover()" style="font-size: 11px; padding: 6px 12px;">Take Over</button>
-            <button class="btn-outline" id="btn-resolve" onclick="resolveChat()" style="font-size: 11px; padding: 6px 12px; background: var(--primary); color: white; border: none;">Resolve</button>
+          <div class="chat-list" id="chat-list"></div>
+          <div style="padding: 12px; border-top: 1px solid var(--line); text-align: center;">
+            <button class="btn-outline" onclick="seedDemo()" style="font-size: 11px; padding: 6px 12px;">+ Generate Demo Chats</button>
           </div>
         </div>
-        
-        <div class="messages" id="messages">
-          <!-- Messages load here -->
+
+        <div class="thread">
+          <div class="thread-empty" id="thread-empty">
+            <h2>No chat selected</h2>
+            <p>Select a conversation to view messages.</p>
+          </div>
+          <div id="thread-active" style="display: none; flex-direction: column; height: 100%;">
+            <div class="thread-header">
+              <div class="th-user">
+                <div class="avatar" id="th-avatar" style="width: 40px; height: 40px; font-size: 14px; background: var(--primary); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">?</div>
+                <div>
+                  <div class="th-name" id="th-name">Loading...</div>
+                  <div class="th-sub" id="th-sub">+256...</div>
+                </div>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn-outline" id="btn-takeover" onclick="takeover()" style="font-size: 11px; padding: 6px 12px;">Take Over</button>
+                <button class="btn-outline" id="btn-resolve" onclick="resolveChat()" style="font-size: 11px; padding: 6px 12px; background: var(--primary); color: white; border: none;">Resolve</button>
+              </div>
+            </div>
+            <div class="messages" id="messages"></div>
+            <div class="composer">
+              <button class="attach-btn" onclick="document.getElementById('file-input').click()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+              </button>
+              <input type="file" id="file-input" style="display:none" onchange="uploadMedia(this)">
+              <textarea id="composer-input" rows="1" placeholder="Type a reply..." onkeydown="handleKey(event)" oninput="autoGrow(this)"></textarea>
+              <button class="btn-send" onclick="sendReply()" id="btn-send">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+              </button>
+            </div>
+          </div>
         </div>
-        
-        <div class="composer">
-          <textarea id="composer-input" rows="1" placeholder="Type a reply..." onkeydown="handleKey(event)" oninput="autoGrow(this)"></textarea>
-          <button class="btn-send" onclick="sendReply()" id="btn-send">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-          </button>
+
+        <div class="details" id="details-panel">
+          <div class="thread-empty" style="padding: 40px 20px;">
+            <p>Customer details will appear here.</p>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Right Details Panel -->
-    <div class="details" id="details-panel">
-      <div class="thread-empty" style="padding: 40px 20px;">
-        <p>Customer details will appear here.</p>
+    <!-- TICKETS VIEW -->
+    <div class="view" id="view-tickets">
+      <div class="table-view">
+        <div class="table-header"><h2>Support Tickets</h2></div>
+        <table class="data-table">
+          <thead><tr><th>Ref</th><th>Customer</th><th>Issue</th><th>Status</th><th>Date</th></tr></thead>
+          <tbody id="ticket-rows"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ORDERS VIEW -->
+    <div class="view" id="view-orders">
+      <div class="table-view">
+        <div class="table-header"><h2>Orders</h2></div>
+        <table class="data-table">
+          <thead><tr><th>Ref</th><th>Customer</th><th>Items</th><th>Address</th><th>Status</th></tr></thead>
+          <tbody id="order-rows"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- APPOINTMENTS VIEW -->
+    <div class="view" id="view-appointments">
+      <div class="table-view">
+        <div class="table-header"><h2>Appointments</h2></div>
+        <table class="data-table">
+          <thead><tr><th>Ref</th><th>Customer</th><th>Date & Time</th><th>Purpose</th><th>Status</th></tr></thead>
+          <tbody id="appointment-rows"></tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -209,6 +260,7 @@
     let csrf = localStorage.getItem('csrf');
     let currentFilter = 'active';
     let currentPhone = null;
+    let selectedMessageText = '';
 
     // --- UI Helpers ---
     function showToast(msg, type = 'success') {
@@ -226,13 +278,22 @@
     }
 
     function handleKey(e) {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendReply();
-      }
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendReply(); }
     }
 
-    // --- Load Chats ---
+    // --- View Switching ---
+    function switchView(view, el) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.querySelectorAll('.subnav-item').forEach(i => i.classList.remove('active'));
+      document.getElementById('view-' + view).classList.add('active');
+      el.classList.add('active');
+
+      if (view === 'tickets') loadTickets();
+      if (view === 'orders') loadOrders();
+      if (view === 'appointments') loadAppointments();
+    }
+
+    // --- Load Chat List ---
     async function loadChats() {
       const search = document.getElementById('search-input').value;
       const res = await fetch(`/chain-saas/api/chats/conversations?filter=${currentFilter}&search=${search}`, { headers: { 'X-CSRF-Token': csrf } });
@@ -259,10 +320,7 @@
           <div class="chat-row ${activeClass}" onclick="openChat('${c.phone}')">
             <div class="avatar">${initials}</div>
             <div class="chat-info">
-              <div class="chat-name">
-                <span>${c.name || '+' + c.phone}</span>
-                <span class="chat-time">${new Date(c.last_message_at || Date.now()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-              </div>
+              <div class="chat-name"><span>${c.name || '+' + c.phone}</span><span class="chat-time">${new Date(c.last_message_at || Date.now()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></div>
               <div class="chat-preview">${c.last_message_preview || 'No messages yet'}</div>
               <div class="chat-badges">${badges.join('')}</div>
             </div>
@@ -281,21 +339,17 @@
     // --- Open Chat ---
     async function openChat(phone) {
       currentPhone = phone;
-      loadChats(); // Re-render list to show active state
+      loadChats();
 
       document.getElementById('thread-empty').style.display = 'none';
       document.getElementById('thread-active').style.display = 'flex';
 
-      // Load Details
       const res = await fetch('/chain-saas/api/chats/conversations/' + phone, { headers: { 'X-CSRF-Token': csrf } });
       if (res.ok) {
-        const { conversation, customer, orders, issues } = await res.json();
-        
-        // Update Header
+        const { conversation, orders, issues } = await res.json();
         document.getElementById('th-name').textContent = conversation.name || '+' + phone;
         document.getElementById('th-sub').textContent = '+' + phone;
         
-        // Update Right Panel
         const initials = conversation.name ? conversation.name.substring(0, 2).toUpperCase() : '#';
         let orderHtml = orders.map(o => `<div class="d-item"><div class="d-item-title">${o.ref}</div><div class="d-item-sub">${o.items || 'No items'}</div></div>`).join('');
         let issueHtml = issues.map(i => `<div class="d-item"><div class="d-item-title">${i.ref}</div><div class="d-item-sub">${i.summary}</div></div>`).join('');
@@ -306,27 +360,17 @@
             <div class="details-name">${conversation.name || 'Unknown'}</div>
             <div class="details-phone">+${phone}</div>
           </div>
-          <div class="d-section">
-            <div class="d-title">Tickets & Issues <span>${issues.length}</span></div>
-            ${issueHtml || '<div class="d-item-sub">No open tickets.</div>'}
-          </div>
-          <div class="d-section">
-            <div class="d-title">Recent Orders <span>${orders.length}</span></div>
-            ${orderHtml || '<div class="d-item-sub">No recent orders.</div>'}
-          </div>
+          <div class="d-section"><div class="d-title">Tickets & Issues <span>${issues.length}</span></div>${issueHtml || '<div class="d-item-sub">No open tickets.</div>'}</div>
+          <div class="d-section"><div class="d-title">Recent Orders <span>${orders.length}</span></div>${orderHtml || '<div class="d-item-sub">No recent orders.</div>'}</div>
         `;
         
-        // Update Buttons
         const btnTakeover = document.getElementById('btn-takeover');
         if (conversation.mode === 'human') {
-          btnTakeover.textContent = 'Handback to Bot';
-          btnTakeover.onclick = handback;
+          btnTakeover.textContent = 'Handback to Bot'; btnTakeover.onclick = handback;
         } else {
-          btnTakeover.textContent = 'Take Over';
-          btnTakeover.onclick = takeover;
+          btnTakeover.textContent = 'Take Over'; btnTakeover.onclick = takeover;
         }
       }
-
       loadMessages(phone);
     }
 
@@ -344,8 +388,10 @@
         const sender = m.sender_type === 'customer' ? '' : `<div class="msg-sender">${m.sender_type}</div>`;
         const dirClass = m.direction === 'in' ? 'in' : (m.sender_type === 'bot' ? 'out bot' : 'out');
         
+        // Add right-click listener
+        const msgId = `msg-${m.id}`;
         msgContainer.innerHTML += `
-          <div class="msg-row ${dirClass}">
+          <div class="msg-row ${dirClass}" id="${msgId}" oncontextmenu="showContextMenu(event, '${m.body.replace(/'/g, "\\'")}')">
             <div class="bubble">
               ${sender}
               ${m.body}
@@ -357,6 +403,7 @@
       msgContainer.scrollTop = msgContainer.scrollHeight;
     }
 
+    // --- Send Reply ---
     async function sendReply() {
       if (!currentPhone) return;
       const input = document.getElementById('composer-input');
@@ -386,6 +433,51 @@
       input.focus();
     }
 
+    // --- Media Upload ---
+    async function uploadMedia(input) {
+      if (!input.files || !input.files[0] || !currentPhone) return;
+      const file = input.files[0];
+      
+      const formData = new FormData();
+      formData.append('file', file);
+
+      showToast('Uploading media...');
+      
+      const res = await fetch('/chain-saas/api/chats/conversations/' + currentPhone + '/media', {
+        method: 'POST',
+        headers: { 'X-CSRF-Token': csrf },
+        body: formData
+      });
+
+      if (res.ok) {
+        showToast('Media sent!');
+        loadMessages(currentPhone);
+        loadChats();
+      } else {
+        showToast('Failed to upload media.', 'error');
+      }
+      input.value = ''; // Reset input
+    }
+
+    // --- Context Menu ---
+    function showContextMenu(e, text) {
+      e.preventDefault();
+      selectedMessageText = text;
+      const menu = document.getElementById('context-menu');
+      menu.style.display = 'flex';
+      menu.style.left = e.pageX + 'px';
+      menu.style.top = e.pageY + 'px';
+    }
+    
+    document.addEventListener('click', () => document.getElementById('context-menu').style.display = 'none');
+    
+    function copyMessage() {
+      navigator.clipboard.writeText(selectedMessageText);
+      showToast('Message copied!');
+    }
+    function replyMessage() { showToast('Reply feature coming soon!'); }
+    function reactMessage() { showToast('Reaction sent!'); }
+
     // --- Actions ---
     async function takeover() {
       if (!currentPhone) return;
@@ -412,11 +504,42 @@
       loadChats();
     }
 
+    // --- Load Lists (Tickets, Orders, Appts) ---
+    async function loadTickets() {
+      const res = await fetch('/chain-saas/api/chats/tickets', { headers: { 'X-CSRF-Token': csrf } });
+      const { tickets } = await res.json();
+      document.getElementById('count-tickets').textContent = tickets.length;
+      document.getElementById('ticket-rows').innerHTML = tickets.map(t => `
+        <tr><td>${t.ref}</td><td>${t.customer_name || t.phone}</td><td>${t.summary}</td><td><span class="badge-pill badge-${t.status === 'new' ? 'escalated' : 'bot'}">${t.status}</span></td><td>${new Date(t.created_at).toLocaleDateString()}</td></tr>
+      `).join('');
+    }
+
+    async function loadOrders() {
+      const res = await fetch('/chain-saas/api/chats/orders', { headers: { 'X-CSRF-Token': csrf } });
+      const { orders } = await res.json();
+      document.getElementById('count-orders').textContent = orders.length;
+      document.getElementById('order-rows').innerHTML = orders.map(o => `
+        <tr><td>${o.ref}</td><td>${o.customer_name || o.phone}</td><td>${o.items}</td><td>${o.delivery_address}</td><td><span class="badge-pill badge-bot">${o.status}</span></td></tr>
+      `).join('');
+    }
+
+    async function loadAppointments() {
+      const res = await fetch('/chain-saas/api/chats/appointments', { headers: { 'X-CSRF-Token': csrf } });
+      const { appointments } = await res.json();
+      document.getElementById('count-appointments').textContent = appointments.length;
+      document.getElementById('appointment-rows').innerHTML = appointments.map(a => `
+        <tr><td>${a.ref}</td><td>${a.customer_name || a.phone}</td><td>${a.appt_date} at ${a.appt_time}</td><td>${a.purpose}</td><td><span class="badge-pill badge-bot">${a.status}</span></td></tr>
+      `).join('');
+    }
+
     async function seedDemo() {
       showToast('Generating demo data...');
       await fetch('/chain-saas/api/chats/seed-demo', { method: 'POST', headers: { 'X-CSRF-Token': csrf } });
       showToast('Demo data generated!');
       loadChats();
+      loadTickets();
+      loadOrders();
+      loadAppointments();
     }
 
     async function logout() {
@@ -427,7 +550,9 @@
 
     // --- Init ---
     loadChats();
-    // Poll every 10 seconds for new messages
+    loadTickets();
+    loadOrders();
+    loadAppointments();
     setInterval(() => { if (currentPhone) loadMessages(currentPhone); loadChats(); }, 10000);
   </script>
 </body>
