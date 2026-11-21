@@ -39,7 +39,10 @@ router.use("/api/tenant", tenantRoutes);
 router.use("/api/auth", require("./routes/auth.js"));
 router.use("/api/tenant", require("./routes/tenant.js"));
 router.use("/api/billing", require("./routes/billing.js"));
-router.use("/api/platform", require("./routes/platform.js")); // <-- ADD THIS LINE
+router.use("/api/platform", require("./routes/platform.js")); 
+router.use("/api/whatsapp", require("./routes/whatsapp.js")); // <-- ADD THIS
+router.use("/webhook", require("./routes/webhook.js"));       // <-- ADD THIS
+// <-- ADD THIS LINE
 
 
 // ---- PWA static assets (Phase 0 placeholder) ----
