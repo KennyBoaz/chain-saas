@@ -1,0 +1,23 @@
+{
+  "name": "Chain SaaS Dashboard",
+  "short_name": "Chain SaaS",
+  "description": "Manage your WhatsApp AI assistant.",
+  "start_url": "/chain-saas/site/dashboard.html",
+  "scope": "/chain-saas/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f7f4ee",
+  "theme_color": "#243b32",
+  "icons": [
+    {
+      "src": "/chain-saas/site/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/chain-saas/site/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

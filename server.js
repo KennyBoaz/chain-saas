@@ -50,9 +50,12 @@ const PUBLIC = path.join(__dirname, "public");
 router.use(
   express.static(PUBLIC, {
     setHeaders(res, filePath) {
-      if (filePath.endsWith("sw.js")) res.setHeader("Cache-Control", "no-cache");
-      if (filePath.endsWith("manifest.webmanifest"))
+      if (filePath.endsWith("sw.js")) {
+        res.setHeader("Cache-Control", "no-cache");
+      }
+      if (filePath.endsWith("manifest.json") || filePath.endsWith("manifest.webmanifest")) {
         res.setHeader("Content-Type", "application/manifest+json");
+      }
     },
   })
 );

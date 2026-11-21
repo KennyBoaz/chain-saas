@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard — Chain SaaS</title>
+  <link rel="manifest" href="/chain-saas/site/manifest.json">
+  <meta name="theme-color" content="#243b32">
   <link rel="stylesheet" href="/chain-saas/site/style.css">
   <style>
     .dash-container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
@@ -188,6 +190,48 @@
       localStorage.removeItem('csrf');
       window.location.href = '/site/index.html';
     }
+
+    // --- PWA Service Worker Registration ---
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/chain-saas/site/sw.js').then(() => {
+        console.log('Service Worker Registered');
+      });
+    }
+
+    // --- Offline Queue Logic ---
+    function saveOfflineMessage(messagePayload) {
+      let queue = JSON.parse(localStorage.getItem('offline_msgs') || '[]');
+      queue.push(messagePayload);
+      localStorage.setItem('offline_msgs', JSON.stringify(queue));
+    }
+
+    async function syncOfflineMessages() {
+      const queue = JSON.parse(localStorage.getItem('offline_msgs') || '[]');
+      if (queue.length === 0) return;
+
+      console.log(`Syncing ${queue.length} offline messages...`);
+      const remaining = [];
+
+      for (const msg of queue) {
+        try {
+          const res = await fetch('/chain-saas/api/whatsapp/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+            body: JSON.stringify(msg)
+          });
+          if (!res.ok) remaining.push(msg); // Keep in queue if failed
+        } catch (e) {
+          remaining.push(msg); // Keep in queue if network error
+        }
+      }
+
+      localStorage.setItem('offline_msgs', JSON.stringify(remaining));
+      if (remaining.length === 0) alert('All offline messages synced successfully!');
+    }
+
+    // Listen for connection restoration
+    window.addEventListener('online', syncOfflineMessages);
+
 
     // Run on load
     loadData();
