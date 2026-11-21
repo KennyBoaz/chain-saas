@@ -8,31 +8,56 @@ const audit = require("../audit.js");
 const router = express.Router();
 router.use(auth.requireAuth);
 router.use(auth.requireTenantAdmin); 
-// We require Admin for these routes. Tenant staff can view later.
 
-// Get current tenant
+// 1. Get current tenant
 router.get("/me", wrap(async (req, res) => {
   const tenant = await db.one("SELECT * FROM tenants WHERE id = ?", [req.user.tenant_id]);
   res.json({ tenant });
 }));
 
-// Update basic profile
+// 2. Update profile (Business Name + AI System Prompt)
 router.put("/profile", wrap(async (req, res) => {
-  const { businessName } = req.body;
-  if (!businessName) return res.status(400).json({ error: "Business name required." });
+  const { businessName, systemPrompt, businessProfile } = req.body;
+  const tenantId = req.user.tenant_id;
+
+  const sets = [];
+  const params = [];
+
+  if (businessName !== undefined) {
+    if (!businessName.trim()) return res.status(400).json({ error: "Business name cannot be empty." });
+    sets.push("business_name = ?");
+    params.push(businessName);
+  }
+
+  if (systemPrompt !== undefined) {
+    sets.push("system_prompt = ?");
+    params.push(systemPrompt);
+  }
+
+  if (businessProfile !== undefined) {
+    sets.push("business_profile_json = ?");
+    params.push(JSON.stringify(businessProfile));
+  }
+
+  if (sets.length === 0) return res.status(400).json({ error: "Nothing to update." });
+
+  sets.push("updated_at = UTC_TIMESTAMP(3)");
+  params.push(tenantId);
 
   await db.run(
-    "UPDATE tenants SET business_name = ?, updated_at = UTC_TIMESTAMP(3) WHERE id = ?",
-    [businessName, req.user.tenant_id]
+    `UPDATE tenants SET ${sets.join(", ")} WHERE id = ?`,
+    params
   );
+
   await audit.log({
-    tenantId: req.user.tenant_id, actorType: "user", actorId: req.user.id,
+    tenantId, actorType: "user", actorId: req.user.id,
     action: "tenant.profile_update", ip: auth.clientIp(req)
   });
+
   res.json({ ok: true });
 }));
 
-// Update branding (Colors, Slogan)
+// 3. Update branding (Colors, Slogan)
 router.put("/branding", wrap(async (req, res) => {
   const { primaryColor, secondaryColor, slogan } = req.body;
   
@@ -53,11 +78,10 @@ router.put("/branding", wrap(async (req, res) => {
   res.json({ ok: true, branding: updatedBranding });
 }));
 
-// Upload Logo
+// 4. Upload Logo
 router.post("/logo", media.upload.single("logo"), wrap(async (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded." });
 
-  // Save URL path to branding JSON
   const logoUrl = `/uploads/logos/${req.file.filename}`;
   const current = await db.one("SELECT branding_json FROM tenants WHERE id = ?", [req.user.tenant_id]);
   const currentBranding = current.branding_json || {};

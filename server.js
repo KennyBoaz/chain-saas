@@ -42,6 +42,7 @@ router.use("/api/billing", require("./routes/billing.js"));
 router.use("/api/platform", require("./routes/platform.js")); 
 router.use("/api/whatsapp", require("./routes/whatsapp.js")); // <-- ADD THIS
 router.use("/webhook", require("./routes/webhook.js"));       // <-- ADD THIS
+router.use("/api/chats", require("./routes/chats.js")); // Add this line
 // <-- ADD THIS LINE
 
 

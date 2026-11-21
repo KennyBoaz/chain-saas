@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inbox — Chain SaaS</title>
+  <link rel="stylesheet" href="/chain-saas/site/style.css">
+  <style>
+    body { overflow: hidden; height: 100vh; }
+    .layout { display: flex; height: calc(100vh - 60px); }
+    .sidebar { width: 320px; background: #fff; border-right: 1px solid #ddd; overflow-y: auto; }
+    .chat-item { padding: 15px 20px; border-bottom: 1px solid #eee; cursor: pointer; }
+    .chat-item:hover, .chat-item.active { background: #f9f9f9; }
+    .chat-item h4 { margin-bottom: 5px; font-size: 15px; }
+    .chat-item p { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    
+    .chat-area { flex: 1; display: flex; flex-direction: column; background: #efe8da; }
+    .chat-header { background: #fff; padding: 15px 20px; border-bottom: 1px solid #ddd; font-weight: bold; }
+    .messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+    
+    .msg { max-width: 70%; padding: 10px 15px; border-radius: 8px; font-size: 14px; }
+    .msg.in { align-self: flex-start; background: #fff; }
+    .msg.out { align-self: flex-end; background: #d9f2cc; }
+    
+    .composer { background: #fff; padding: 15px; display: flex; gap: 10px; border-top: 1px solid #ddd; }
+    .composer input { flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 20px; }
+    .empty-state { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--muted); font-size: 18px; }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="logo">Chain SaaS</div>
+    <div class="links">
+      <a href="/chain-saas/site/dashboard.html">Dashboard</a>
+      <a href="/chain-saas/site/settings.html" style="margin-left: 15px;">Settings</a>
+      <button onclick="logout()" class="btn" style="background: #eee; color: #333; margin-left: 20px;">Log Out</button>
+    </div>
+  </nav>
+
+  <div class="layout">
+    <div class="sidebar" id="chat-list">
+      <!-- Conversations load here -->
+    </div>
+    <div class="chat-area">
+      <div id="chat-empty" class="empty-state">Select a conversation to view messages</div>
+      
+      <div id="chat-box" style="display:none; flex-direction:column; height:100%;">
+        <div class="chat-header" id="chat-header"></div>
+        <div class="messages" id="messages"></div>
+        <div class="composer">
+          <input type="text" id="reply-input" placeholder="Type a reply..." onkeypress="if(event.key==='Enter') sendReply()">
+          <button class="btn" onclick="sendReply()">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let csrf = localStorage.getItem('csrf');
+    let currentPhone = null;
+
+    async function loadChats() {
+      const res = await fetch('/chain-saas/api/chats/conversations', { headers: { 'X-CSRF-Token': csrf } });
+      if (!res.ok) return window.location.href = '/chain-saas/site/login.html';
+      
+      const { conversations } = await res.json();
+      const list = document.getElementById('chat-list');
+      list.innerHTML = '';
+      
+      if (conversations.length === 0) {
+        list.innerHTML = '<p style="padding:20px; color:#888;">No messages yet.</p>';
+        return;
+      }
+
+      conversations.forEach(c => {
+        list.innerHTML += `
+          <div class="chat-item" onclick="openChat('${c.phone}')">
+            <h4>+${c.phone}</h4>
+            <p>${c.last_message_preview || 'No messages'}</p>
+          </div>
+        `;
+      });
+    }
+
+    async function openChat(phone) {
+      currentPhone = phone;
+      document.getElementById('chat-empty').style.display = 'none';
+      document.getElementById('chat-box').style.display = 'flex';
+      document.getElementById('chat-header').textContent = '+' + phone;
+
+      const res = await fetch('/chain-saas/api/chats/conversations/' + phone + '/messages', { headers: { 'X-CSRF-Token': csrf } });
+      const { messages } = await res.json();
+      
+      const msgArea = document.getElementById('messages');
+      msgArea.innerHTML = '';
+      
+      messages.forEach(m => {
+        msgArea.innerHTML += `
+          <div class="msg ${m.direction}">
+            ${m.body}
+          </div>
+        `;
+      });
+      msgArea.scrollTop = msgArea.scrollHeight;
+    }
+
+    async function sendReply() {
+      if (!currentPhone) return;
+      const input = document.getElementById('reply-input');
+      const text = input.value.trim();
+      if (!text) return;
+
+      input.disabled = true;
+      const res = await fetch('/chain-saas/api/chats/conversations/' + currentPhone + '/reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+        body: JSON.stringify({ text })
+      });
+
+      if (res.ok) {
+        input.value = '';
+        openChat(currentPhone); // Reload thread
+      } else {
+        alert('Failed to send.');
+      }
+      input.disabled = false;
+      input.focus();
+    }
+
+    async function logout() {
+      await fetch('/chain-saas/api/auth/logout', { method: 'POST', headers: { 'X-CSRF-Token': csrf } });
+      localStorage.removeItem('csrf');
+      window.location.href = '/chain-saas/site/index.html';
+    }
+
+    loadChats();
+    // Poll for new messages every 5 seconds
+    setInterval(() => { if (!currentPhone) loadChats(); }, 5000);
+  </script>
+</body>
+</html>

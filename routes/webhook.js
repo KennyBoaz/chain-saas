@@ -57,10 +57,21 @@ router.post("/", async (req, res) => {
     }
 
     // C. Save message to DB
+    // C. Save message to DB & Update Conversation
     await db.run(`
       INSERT INTO messages (tenant_id, phone, direction, sender_type, body, created_at)
       VALUES (?, ?, 'in', 'customer', ?, UTC_TIMESTAMP(3))
     `, [connection.tenant_id, customerPhone, textBody]);
+
+    await db.run(`
+      INSERT INTO conversations (tenant_id, phone, last_message_at, last_message_preview, created_at)
+      VALUES (?, ?, UTC_TIMESTAMP(3), ?, UTC_TIMESTAMP(3))
+      ON DUPLICATE KEY UPDATE 
+        last_message_at = UTC_TIMESTAMP(3),
+        last_message_preview = VALUES(last_message_preview),
+        unread_count = unread_count + 1
+    `, [connection.tenant_id, customerPhone, textBody]);
+
 
     // D. Generate AI Reply
     const aiReply = await generateReply(connection.tenant_id, textBody);
@@ -78,12 +89,17 @@ router.post("/", async (req, res) => {
       { headers: { Authorization: `Bearer ${accessToken}` } }
     );
 
-    // F. Save outgoing message to DB
+      // F. Save outgoing message to DB & Update Conversation
     await db.run(`
       INSERT INTO messages (tenant_id, phone, direction, sender_type, body, created_at)
       VALUES (?, ?, 'out', 'bot', ?, UTC_TIMESTAMP(3))
     `, [connection.tenant_id, customerPhone, aiReply]);
 
+    await db.run(`
+      UPDATE conversations 
+      SET last_message_at = UTC_TIMESTAMP(3), last_message_preview = ? 
+      WHERE tenant_id = ? AND phone = ?
+    `, [aiReply, connection.tenant_id, customerPhone]);
   } catch (err) {
     console.error("[Webhook] Error processing message:", err.message);
   }
