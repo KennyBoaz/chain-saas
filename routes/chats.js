@@ -74,4 +74,39 @@ router.post("/conversations/:phone/reply", auth.requireAuth, wrap(async (req, re
   res.json({ ok: true });
 }));
 
+// Generate demo data for testing the UI
+router.post("/seed-demo", auth.requireAuth, wrap(async (req, res) => {
+  const tenantId = req.user.tenant_id;
+  const demoPhones = ["256701234567", "256772345678", "256753456789"];
+  
+  for (const phone of demoPhones) {
+    // Create customer
+    await db.run("INSERT IGNORE INTO customers (tenant_id, phone, whatsapp_name, created_at) VALUES (?, ?, ?, UTC_TIMESTAMP(3))", [tenantId, phone, "Demo Customer " + phone.slice(-4)]);
+    
+    // Create conversation
+    await db.run(`
+      INSERT INTO conversations (tenant_id, phone, last_message_at, last_message_preview, created_at)
+      VALUES (?, ?, UTC_TIMESTAMP(3), 'I would like to know the price of solar panels.', UTC_TIMESTAMP(3))
+      ON DUPLICATE KEY UPDATE last_message_at = UTC_TIMESTAMP(3)
+    `, [tenantId, phone]);
+
+    // Create messages
+    const msgs = [
+      ["in", "customer", "Hello, do you have solar panels in stock?"],
+      ["out", "bot", "Yes! We have 200W and 300W panels available. Which one are you interested in?"],
+      ["in", "customer", "I would like to know the price of solar panels."]
+    ];
+    
+    for (const [dir, sender, body] of msgs) {
+      await db.run(
+        "INSERT INTO messages (tenant_id, phone, direction, sender_type, body, created_at) VALUES (?, ?, ?, ?, ?, UTC_TIMESTAMP(3))",
+        [tenantId, phone, dir, sender, body]
+      );
+    }
+  }
+  
+  res.json({ ok: true, message: "Demo data seeded!" });
+}));
+
+
 module.exports = router;
