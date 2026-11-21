@@ -48,7 +48,8 @@
           <p style="margin-top: 5px; color: var(--muted);">Connect your business number to let the AI reply.</p>
           <p style="margin-top: 10px;">Status: <span id="wa-status" style="font-weight: bold;">Checking...</span></p>
         </div>
-        <button class="btn" id="wa-btn" onclick="connectWhatsApp()" disabled>Connect WhatsApp</button>
+        <!-- THIS IS THE MISSING BUTTON -->
+        <button class="btn" id="wa-btn" onclick="connectWhatsApp()" style="display: none;">Connect WhatsApp</button>
       </div>
     </div>
   </div>
@@ -60,7 +61,18 @@
     let currentTenant = null;
     let csrf = localStorage.getItem('csrf');
 
-    // 1. Load User Data on page load
+    // 1. Initialize FB SDK (Runs immediately)
+    window.fbAsyncInit = function() {
+      FB.init({
+        appId: '1669045207960904', // <--- INSERT YOUR META APP ID HERE
+        autoLogAppEvents: true,
+        xfbml: false,
+        version: 'v20.0'
+      });
+      console.log("Facebook SDK Loaded");
+    };
+
+    // 2. Load User Data on page load
     async function loadData() {
       try {
         const res = await fetch('/chain-saas/api/auth/me', { headers: { 'X-CSRF-Token': csrf } });
@@ -76,24 +88,26 @@
         statusEl.textContent = currentTenant.status;
         statusEl.className = 'status-badge status-' + currentTenant.status;
 
-        // If active, enable WhatsApp button
+        // If active, show WhatsApp button
         if (currentTenant.status === 'active') {
           document.getElementById('pay-btn').style.display = 'none';
           
-          // Check WhatsApp status
           const waRes = await fetch('/chain-saas/api/whatsapp/status', { headers: { 'X-CSRF-Token': csrf } });
           const waData = await waRes.json();
+          
+          const waBtn = document.getElementById('wa-btn');
+          const waStatus = document.getElementById('wa-status');
+          
           if (waData.connected) {
-            document.getElementById('wa-status').textContent = 'Connected (ID: ' + waData.connection.phone_number_id + ')';
-            document.getElementById('wa-status').style.color = 'green';
-            document.getElementById('wa-btn').style.display = 'none';
+            waStatus.textContent = 'Connected (ID: ' + waData.connection.phone_number_id + ')';
+            waStatus.style.color = 'green';
+            waBtn.style.display = 'none';
           } else {
-            document.getElementById('wa-status').textContent = 'Not connected';
-            document.getElementById('wa-status').style.color = 'red';
-            document.getElementById('wa-btn').disabled = false;
+            waStatus.textContent = 'Not connected';
+            waStatus.style.color = 'red';
+            waBtn.style.display = 'inline-block'; // Show the button!
           }
         } else {
-          document.getElementById('wa-btn').disabled = true;
           document.getElementById('wa-status').textContent = 'Requires active subscription';
         }
       } catch (e) {
@@ -102,7 +116,7 @@
       }
     }
 
-    // 2. Simulate Payment
+    // 3. Simulate Payment
     async function simulatePayment() {
       const btn = document.getElementById('pay-btn');
       btn.textContent = 'Processing...';
@@ -122,36 +136,28 @@
       }
     }
 
-    // 3. Embedded WhatsApp Signup (Meta)
+    // 4. Embedded WhatsApp Signup
     function connectWhatsApp() {
-      // Initialize FB SDK
-      window.fbAsyncInit = function() {
-        FB.init({
-          appId: '1669045207960904', // <- You must insert your Meta App ID here
-          autoLogAppEvents: true,
-          xfbml: true,
-          version: 'v20.0'
-        });
-      };
+      if (typeof FB === 'undefined') {
+        alert("Facebook SDK is still loading. Please wait a second and try again.");
+        return;
+      }
 
-      // Launch the popup
       FB.login(function(response) {
         if (response.authResponse) {
-          // In a real flow, Meta sends a postMessage event with the WABA ID and Phone Number ID.
-          // For now, we listen for that event below.
           console.log('FB Login successful', response);
         } else {
           console.log('User cancelled login or did not fully authorize.');
         }
       }, {
-        config_id: 'ae908260254af600056daadd29c76e90', // <- You must insert your Meta Config ID here
+        config_id: '3702487739888996', // <--- INSERT YOUR META CONFIG ID HERE
         response_type: 'code',
         override_default_response_type: true,
         extras: { setup: {}, featureType: 'whatsapp_business_app_onboarding' }
       });
     }
 
-    // 4. Listen for Meta's Embedded Signup success message
+    // 5. Listen for Meta's Embedded Signup success message
     window.addEventListener('message', async (event) => {
       if (!event.origin.endsWith('facebook.com')) return;
       
@@ -160,12 +166,10 @@
         if (data.type === 'WA_EMBEDDED_SIGNUP' && data.event === 'FINISH') {
           const { waba_id, phone_number_id } = data.data;
           
-          // Get the auth code from the FB SDK response
           FB.getLoginStatus(async (response) => {
             if (response.authResponse && response.authResponse.code) {
               const code = response.authResponse.code;
               
-              // Send to our backend
               const res = await fetch('/chain-saas/api/whatsapp/connect', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
@@ -184,56 +188,12 @@
       } catch (e) { /* Ignore parsing errors */ }
     });
 
-    // Logout
     async function logout() {
       await fetch('/chain-saas/api/auth/logout', { method: 'POST', headers: { 'X-CSRF-Token': csrf } });
       localStorage.removeItem('csrf');
       window.location.href = '/chain-saas/site/index.html';
     }
 
-    // --- PWA Service Worker Registration ---
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/chain-saas/site/sw.js').then(() => {
-        console.log('Service Worker Registered');
-      });
-    }
-
-    // --- Offline Queue Logic ---
-    function saveOfflineMessage(messagePayload) {
-      let queue = JSON.parse(localStorage.getItem('offline_msgs') || '[]');
-      queue.push(messagePayload);
-      localStorage.setItem('offline_msgs', JSON.stringify(queue));
-    }
-
-    async function syncOfflineMessages() {
-      const queue = JSON.parse(localStorage.getItem('offline_msgs') || '[]');
-      if (queue.length === 0) return;
-
-      console.log(`Syncing ${queue.length} offline messages...`);
-      const remaining = [];
-
-      for (const msg of queue) {
-        try {
-          const res = await fetch('/chain-saas/api/whatsapp/send', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
-            body: JSON.stringify(msg)
-          });
-          if (!res.ok) remaining.push(msg); // Keep in queue if failed
-        } catch (e) {
-          remaining.push(msg); // Keep in queue if network error
-        }
-      }
-
-      localStorage.setItem('offline_msgs', JSON.stringify(remaining));
-      if (remaining.length === 0) alert('All offline messages synced successfully!');
-    }
-
-    // Listen for connection restoration
-    window.addEventListener('online', syncOfflineMessages);
-
-
-    // Run on load
     loadData();
   </script>
 </body>
