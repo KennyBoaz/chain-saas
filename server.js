@@ -3,6 +3,12 @@
  * Mounts: /health, /, /manifest.webmanifest, /sw.js, /icons/*, /offline.html
  * Later phases add: /api/auth, /api/tenant, /api/billing, /webhook, /admin, /app
  */
+
+// ADD THESE IMPORTS AT THE TOP: phase 1
+const authRoutes = require("./routes/auth.js");
+const tenantRoutes = require("./routes/tenant.js");
+//
+
 require("dotenv").config();
 const express = require("express");
 const cookieParser = require("cookie-parser");
@@ -26,6 +32,11 @@ router.use(tenantContext.loadTenant);
 
 // ---- Health & root ----
 router.use(health);
+
+// ---- API Routes ----
+router.use("/api/auth", authRoutes);
+router.use("/api/tenant", tenantRoutes);
+
 
 // ---- PWA static assets (Phase 0 placeholder) ----
 const PUBLIC = path.join(__dirname, "public");
