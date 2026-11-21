@@ -61,7 +61,7 @@
         
         // Save CSRF for future requests
         localStorage.setItem('csrf', data.csrf);
-        window.location.href = '/site/dashboard.html';
+        window.location.href = '/chain-saas/site/dashboard.html';
       } catch (e) {
         err.textContent = e.message;
         err.style.display = 'block';
