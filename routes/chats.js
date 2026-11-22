@@ -228,16 +228,9 @@ router.get("/appointments", auth.requireAuth, wrap(async (req, res) => {
 // ==========================================
 // MEDIA UPLOAD
 // ==========================================
-const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
+const { uploadChatMedia } = require("../media.js");
 
-const UPLOAD_DIR = path.join(__dirname, "../public/uploads/chat");
-if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-
-const upload = multer({ dest: UPLOAD_DIR });
-
-router.post("/conversations/:phone/media", auth.requireAuth, upload.single("file"), wrap(async (req, res) => {
+router.post("/conversations/:phone/media", auth.requireAuth, uploadChatMedia.single("file"), wrap(async (req, res) => {
   if (!req.file) throw new HttpError(400, "No file uploaded.");
   const tenantId = req.user.tenant_id;
   const phone = req.params.phone;

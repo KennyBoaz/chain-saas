@@ -388,13 +388,34 @@
         const sender = m.sender_type === 'customer' ? '' : `<div class="msg-sender">${m.sender_type}</div>`;
         const dirClass = m.direction === 'in' ? 'in' : (m.sender_type === 'bot' ? 'out bot' : 'out');
         
+        // Render different bubble content based on message type
+        let bubbleContent = '';
+        
+        if (m.has_media && m.media_name) {
+          const ext = m.media_name.split('.').pop().toLowerCase();
+          if (['jpg', 'jpeg', 'png', 'webp'].includes(ext)) {
+            bubbleContent = `<img src="${m.media_name}" style="max-width: 100%; border-radius: 8px; cursor: pointer;" onclick="window.open('${m.media_name}', '_blank')">`;
+          } else if (['mp4', '3gp'].includes(ext)) {
+            bubbleContent = `<video src="${m.media_name}" controls style="max-width: 100%; border-radius: 8px;"></video>`;
+          } else if (['mp3', 'ogg', 'wav', 'aac'].includes(ext)) {
+            bubbleContent = `<audio src="${m.media_name}" controls style="max-width: 100%;"></audio>`;
+          } else {
+            bubbleContent = `<a href="${m.media_name}" target="_blank" style="color: var(--primary); text-decoration: underline;">📄 Download: ${m.body}</a>`;
+          }
+        } else if (m.msg_type === 'location' && m.latitude) {
+          bubbleContent = `<a href="https://maps.google.com/?q=${m.latitude},${m.longitude}" target="_blank" style="color: var(--primary);">📍 View Location</a><br>${m.body}`;
+        } else {
+          bubbleContent = m.is_deleted ? `<em style="color: var(--muted);">${m.body}</em>` : m.body;
+        }
+
         // Add right-click listener
         const msgId = `msg-${m.id}`;
         msgContainer.innerHTML += `
           <div class="msg-row ${dirClass}" id="${msgId}" oncontextmenu="showContextMenu(event, '${m.body.replace(/'/g, "\\'")}')">
             <div class="bubble">
               ${sender}
-              ${m.body}
+              ${bubbleContent}
+              ${m.customer_reaction ? `<div style="font-size: 20px; margin-top: 4px;">${m.customer_reaction}</div>` : ''}
               <span class="msg-time">${time}</span>
             </div>
           </div>
