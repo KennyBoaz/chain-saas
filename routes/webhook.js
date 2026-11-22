@@ -2,7 +2,7 @@ const express = require("express");
 const axios = require("axios");
 const db = require("../db.js");
 const cryptoHelper = require("../crypto.js");
-const { downloadAndSaveMedia } = require("../media.js");
+const { downloadIncomingMedia } = require("../media.js"); // <-- Correct import
 const { generateReply } = require("../gemini.js");
 
 const router = express.Router();
@@ -30,7 +30,7 @@ router.post("/", async (req, res) => {
     const value = change?.value;
     if (!value) return;
 
-    // Handle Delivery Statuses (outbound ticks)
+    // Handle Delivery Statuses
     if (value.statuses) {
       for (const status of value.statuses) {
         if (status.status === "failed") {
@@ -71,8 +71,7 @@ router.post("/", async (req, res) => {
     `, [tenantId, customerPhone, value.contacts?.[0]?.profile?.name || null]);
 
     let replyText = null;
-    let mediaUrl = null;
-    let mediaMime = null;
+    let attachments = []; // Holds the base64 data for Gemini
 
     // --- HANDLE MESSAGE TYPES ---
     switch (msgType) {
@@ -85,26 +84,29 @@ router.post("/", async (req, res) => {
       case "document":
       case "audio":
         const mediaObj = message[msgType];
-        mediaMime = mediaObj.mime_type || (msgType === "image" ? "image/jpeg" : "application/octet-stream");
-        mediaUrl = await downloadAndSaveMedia(tenantId, mediaObj.id, mediaMime);
         
-        // If it's an image, save the caption as the prompt. Otherwise, use a placeholder.
-        replyText = mediaObj.caption || `[${msgType.toUpperCase()} RECEIVED]`;
+        // 1. Download the media using our new bulletproof function
+        const mediaData = await downloadIncomingMedia(tenantId, mediaObj.id, msgType);
         
-        await db.run(`
-          INSERT INTO messages (tenant_id, phone, direction, sender_type, msg_type, body, has_media, media_mime, media_name, created_at)
-          VALUES (?, ?, 'in', 'customer', ?, ?, 1, ?, ?, UTC_TIMESTAMP(3))
-        `, [tenantId, customerPhone, msgType, replyText, mediaMime, mediaUrl]);
+        if (mediaData.localUrl) {
+          // 2. Save the media message to the database
+          await db.run(`
+            INSERT INTO messages (tenant_id, phone, direction, sender_type, msg_type, body, has_media, media_mime, media_name, created_at)
+            VALUES (?, ?, 'in', 'customer', ?, ?, 1, ?, ?, UTC_TIMESTAMP(3))
+          `, [tenantId, customerPhone, msgType, mediaObj.caption || `[${msgType.toUpperCase()}]`, mediaData.mimeType, mediaData.localUrl]);
 
-        await db.run(`
-          INSERT INTO conversations (tenant_id, phone, last_message_at, last_message_preview, created_at)
-          VALUES (?, ?, UTC_TIMESTAMP(3), ?, UTC_TIMESTAMP(3))
-          ON DUPLICATE KEY UPDATE last_message_at = UTC_TIMESTAMP(3), last_message_preview = VALUES(last_message_preview), unread_count = unread_count + 1
-        `, [tenantId, customerPhone, replyText]);
-
-        // If the user sent a caption, we pass it to the AI. If they just sent an image, we say "Thanks for the image"
-        // In the future, pass the URL to a Vision model (e.g., gemini-pro-vision).
-        replyText = mediaObj.caption ? `Customer sent an image with caption: "${mediaObj.caption}"` : "Customer sent an attachment.";
+          // 3. Prepare the text prompt and base64 data for Gemini
+          replyText = mediaObj.caption || `Customer sent a ${msgType}.`;
+          
+          if (mediaData.base64Data) {
+            attachments.push({ 
+              mimeType: mediaData.mimeType, 
+              data: mediaData.base64Data 
+            });
+          }
+        } else {
+          replyText = `[Customer sent a ${msgType}, but it could not be downloaded]`;
+        }
         break;
 
       case "location":
@@ -116,33 +118,27 @@ router.post("/", async (req, res) => {
         break;
 
       case "reaction":
-        // Store reaction on the target message
-        const targetWaId = message.reaction.message_id;
         await db.run(
           "UPDATE messages SET customer_reaction = ? WHERE wa_message_id = ? AND tenant_id = ?",
-          [message.reaction.emoji || null, targetWaId, tenantId]
+          [message.reaction.emoji || null, message.reaction.message_id, tenantId]
         );
-        return; // Don't trigger an AI reply for a reaction
+        return; // Don't trigger AI
 
       case "edit":
-        // Customer edited their message
-        const editedText = message.edit.body;
         await db.run(
           "UPDATE messages SET body = ? WHERE wa_message_id = ? AND tenant_id = ?",
-          [editedText, message.edit.message_id, tenantId]
+          [message.edit.body, message.edit.message_id, tenantId]
         );
-        return; // Don't trigger an AI reply
+        return; // Don't trigger AI
 
       case "revoke":
-        // Customer deleted their message
         await db.run(
           "UPDATE messages SET body = '[Message deleted by customer]', is_deleted = 1 WHERE wa_message_id = ? AND tenant_id = ?",
           [message.revoke.original_message_id, tenantId]
         );
-        return;
+        return; // Don't trigger AI
 
       case "interactive":
-        // Customer tapped a button
         const btnReply = message.interactive.button_reply || message.interactive.list_reply;
         replyText = `Customer selected button: ${btnReply?.title} (ID: ${btnReply?.id})`;
         await db.run(`
@@ -155,22 +151,23 @@ router.post("/", async (req, res) => {
         replyText = `[Unsupported message type: ${msgType}]`;
     }
 
-    // If it wasn't a media/interactive message, save the text normally
-    if (msgType === "text" || msgType === "interactive") {
+    // Save text/interactive messages to DB (Media was already saved in the switch)
+    if (msgType === "text" || msgType === "interactive" || msgType === "location") {
       await db.run(`
         INSERT INTO messages (tenant_id, phone, direction, sender_type, msg_type, body, created_at)
         VALUES (?, ?, 'in', 'customer', ?, ?, UTC_TIMESTAMP(3))
       `, [tenantId, customerPhone, msgType, replyText]);
-
-      await db.run(`
-        INSERT INTO conversations (tenant_id, phone, last_message_at, last_message_preview, created_at)
-        VALUES (?, ?, UTC_TIMESTAMP(3), ?, UTC_TIMESTAMP(3))
-        ON DUPLICATE KEY UPDATE last_message_at = UTC_TIMESTAMP(3), last_message_preview = VALUES(last_message_preview), unread_count = unread_count + 1
-      `, [tenantId, customerPhone, replyText]);
     }
 
-    // Generate AI Reply
-    const aiReply = await generateReply(tenantId, customerPhone, replyText);
+    // Update Conversation preview
+    await db.run(`
+      INSERT INTO conversations (tenant_id, phone, last_message_at, last_message_preview, created_at)
+      VALUES (?, ?, UTC_TIMESTAMP(3), ?, UTC_TIMESTAMP(3))
+      ON DUPLICATE KEY UPDATE last_message_at = UTC_TIMESTAMP(3), last_message_preview = VALUES(last_message_preview), unread_count = unread_count + 1
+    `, [tenantId, customerPhone, replyText || `[${msgType}]`]);
+
+    // Generate AI Reply (Passing the attachments array!)
+    const aiReply = await generateReply(tenantId, customerPhone, replyText, attachments);
 
     // Send Reply via Meta
     const accessToken = cryptoHelper.decryptString(connection.access_token_enc);
@@ -182,12 +179,13 @@ router.post("/", async (req, res) => {
 
     const waMessageId = sendRes.data.messages?.[0]?.id || null;
 
-    // Save AI reply
+    // Save AI reply to DB
     await db.run(`
       INSERT INTO messages (tenant_id, phone, direction, sender_type, body, wa_message_id, delivery_status, created_at)
       VALUES (?, ?, 'out', 'bot', ?, ?, 'sent', UTC_TIMESTAMP(3))
     `, [tenantId, customerPhone, aiReply, waMessageId]);
 
+    // Update Conversation preview with AI reply
     await db.run(`
       UPDATE conversations 
       SET last_message_at = UTC_TIMESTAMP(3), last_message_preview = ? 

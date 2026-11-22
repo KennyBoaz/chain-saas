@@ -228,59 +228,40 @@ router.get("/appointments", auth.requireAuth, wrap(async (req, res) => {
 // ==========================================
 // MEDIA UPLOAD
 // ==========================================
-const { uploadChatMedia } = require("../media.js");
+
+const { uploadChatMedia, sendMediaToMeta } = require("../media.js");
+const fs = require("fs");
 
 router.post("/conversations/:phone/media", auth.requireAuth, uploadChatMedia.single("file"), wrap(async (req, res) => {
   if (!req.file) throw new HttpError(400, "No file uploaded.");
   const tenantId = req.user.tenant_id;
   const phone = req.params.phone;
   
-  // 1. Get WhatsApp Connection
-  const conn = await db.one("SELECT phone_number_id, access_token_enc FROM whatsapp_connection WHERE tenant_id = ?", [tenantId]);
-  if (!conn) throw new HttpError(400, "WhatsApp not connected.");
-
-  // 2. Upload media to Meta (Requires a multipart form-data request)
-  const accessToken = cryptoHelper.decryptString(conn.access_token_enc);
-  const FormData = require("form-data");
-  const form = new FormData();
-  form.append("file", fs.createReadStream(req.file.path), req.file.originalname);
-  form.append("type", req.file.mimetype);
-  form.append("messaging_product", "whatsapp");
+  const filePath = req.file.path;
+  const mimeType = req.file.mimetype;
+  const originalName = req.file.originalname;
 
   try {
-    const uploadRes = await axios.post(
-      `https://graph.facebook.com/${GRAPH_VERSION}/${conn.phone_number_id}/media`,
-      form,
-      { headers: { ...form.getHeaders(), Authorization: `Bearer ${accessToken}` } }
-    );
-    const mediaId = uploadRes.data.id;
+    // Send to Meta using the helper
+    const waMessageId = await sendMediaToMeta(tenantId, phone, filePath, mimeType);
 
-    // 3. Send the Media Message
-    await axios.post(
-      `https://graph.facebook.com/${GRAPH_VERSION}/${conn.phone_number_id}/messages`,
-      { messaging_product: "whatsapp", to: phone, type: "image", image: { id: mediaId } },
-      { headers: { Authorization: `Bearer ${accessToken}` } }
-    );
-
-    // 4. Save to DB
+    // Save to DB
     const result = await db.run(`
-      INSERT INTO messages (tenant_id, phone, direction, sender_type, staff_id, msg_type, body, has_media, media_mime, media_name, created_at)
-      VALUES (?, ?, 'out', 'staff', ?, 'image', '[Image Attached]', 1, ?, ?, UTC_TIMESTAMP(3))
-    `, [tenantId, phone, req.user.id, req.file.mimetype, req.file.originalname]);
+      INSERT INTO messages (tenant_id, phone, direction, sender_type, staff_id, msg_type, body, wa_message_id, has_media, media_mime, media_name, created_at)
+      VALUES (?, ?, 'out', 'staff', ?, ?, ?, ?, 1, ?, ?, UTC_TIMESTAMP(3))
+    `, [tenantId, phone, req.user.id, mimeType.split('/')[0], originalName, waMessageId, mimeType, `/uploads/chat/${req.file.filename}`]);
 
     await db.run(`
-      UPDATE conversations SET last_message_at = UTC_TIMESTAMP(3), last_message_preview = '[Image Attached]', mode = 'human' 
+      UPDATE conversations SET last_message_at = UTC_TIMESTAMP(3), last_message_preview = ?, mode = 'human' 
       WHERE tenant_id = ? AND phone = ?
-    `, [tenantId, phone]);
+    `, [`[File: ${originalName}]`, tenantId, phone]);
 
     const newMessage = await db.one("SELECT * FROM messages WHERE id = ?", [result.insertId]);
     res.status(201).json({ messages: [newMessage] });
 
   } catch (err) {
-    console.error("[Meta Media Error]", err.response?.data || err.message);
+    console.error("[Staff Media Error]", err.message);
     throw new HttpError(502, "Failed to send media via WhatsApp.");
-  } finally {
   }
 }));
-
 module.exports = router;
