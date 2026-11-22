@@ -345,7 +345,7 @@ function handleGeminiError(err, history, userMessage) {
   const reply = rateLimited
     ? "We are getting a lot of messages right now. Please try again in a moment."
     : "Sorry, I am having a technical problem right now. Please try again shortly.";
-  return { reply, updatedHistory: withFallbackTurn(history, userMessage, reply), rateLimited };
+  return { reply, updatedHistory: withFallbackTurn(history, userMessage, reply), rateLimited, failed: true };
 }
 
 module.exports = { generateReply, extractReply, stripPlanning, MODEL_CANDIDATES };

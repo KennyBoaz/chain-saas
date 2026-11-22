@@ -267,8 +267,8 @@ async function handleIncomingMessage(ctx, message) {
     notifyTeam(tenantId, { type: "escalation", phone: from, name, title: "The bot could not answer a customer", text: err.message }).catch(() => {});
     return;
   }
-  const { reply, updatedHistory } = result;
-  trace(id, `5 Gemini answered in ${Date.now() - geminiStartedAt}ms`);
+  const { reply, updatedHistory, failed } = result;
+  trace(id, `5 Gemini ${failed ? "FAILED" : "answered"} in ${Date.now() - geminiStartedAt}ms`);
 
   // Did a staff member take over while Gemini was thinking? Then do not talk over them.
   try {
@@ -276,9 +276,16 @@ async function handleIncomingMessage(ctx, message) {
     if (latest && latest.mode === "human") { trace(id, "staff took over meanwhile - bot reply discarded"); return; }
   } catch { /* carry on */ }
 
-  await memory.saveHistory(tenantId, from, updatedHistory).catch((err) => console.error("[db] Could not save the chat history:", err.message));
+  // A failed turn is not remembered (the customer will simply ask again), but the team is told.
+  if (!failed) {
+    await memory.saveHistory(tenantId, from, updatedHistory).catch((err) => console.error("[db] Could not save the chat history:", err.message));
+  }
 
   const delivered = await sendAndRecord(ctx, from, reply, "bot");
+  if (failed) {
+    await chatStore.markEscalated(tenantId, from).catch((e) => console.error("[db] Could not flag the chat:", e.message));
+    notifyTeam(tenantId, { type: "escalation", phone: from, name, title: "The bot could not answer a customer", text: "Gemini was unavailable. Please reply to the customer." }).catch(() => {});
+  }
   trace(id, `6 finished: ${delivered ? "accepted by Meta" : "NOT delivered"} (total ${Date.now() - receivedAt}ms)`);
 }
 
