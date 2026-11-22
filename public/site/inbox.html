@@ -1,581 +1,404 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Inbox — Chain SaaS</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg: #f4f6f8; --paper: #ffffff; --ink: #1a1a1a; --muted: #6b7280; --line: #e5e7eb;
-      --primary: #1e3a32; --primary-hover: #142821; --gold: #c29b4e; --gold-hover: #a8843f;
-      --wa-bg: #e5ddd5;
-      --wa-pattern: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200' fill='none' stroke='%238a8a8a' stroke-opacity='.08' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M100 40l10 20h20l-15 15 5 20-20-10-20 10 5-20-15-15h20z'/><circle cx='50' cy='150' r='10'/><path d='M150 50l15 15-15 15-15-15z'/><path d='M40 60h20v20H40z'/><circle cx='160' cy='140' r='15'/><path d='M80 160l10 10 20-20'/></svg>");
-      --radius: 8px; --shadow-sm: 0 1px 2px rgba(0,0,0,0.05); --shadow-md: 0 4px 12px rgba(0,0,0,0.08); --shadow-lg: 0 12px 32px rgba(0,0,0,0.12);
-      --font-head: "Cormorant Garamond", Georgia, serif; --font-ui: "Poppins", system-ui, sans-serif;
-    }
-    * { box-sizing: border-box; }
-    html, body { height: 100%; margin: 0; }
-    body { font-family: var(--font-ui); font-size: 14px; color: var(--ink); background: var(--bg); overflow: hidden; }
-    
-    /* Topbar */
-    .topbar { height: 64px; background: var(--paper); border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; box-shadow: var(--shadow-sm); position: relative; z-index: 10; }
-    .brand { display: flex; align-items: center; gap: 12px; }
-    .brand-mark { font-family: var(--font-head); font-size: 26px; font-weight: 700; color: var(--primary); }
-    .brand-sub { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
-    .nav-links { display: flex; gap: 8px; align-items: center; }
-    .nav-link { text-decoration: none; color: var(--muted); font-size: 13px; font-weight: 500; padding: 8px 16px; border-radius: 6px; transition: 0.2s; }
-    .nav-link:hover { background: var(--bg); color: var(--ink); }
-    .nav-link.active { background: var(--primary); color: #fff; }
-    .btn-outline { background: transparent; border: 1px solid var(--line); color: var(--ink); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; transition: 0.2s; }
-    .btn-outline:hover { border-color: var(--ink); }
-
-    /* Top Toggle Bar */
-    .subnav { height: 50px; background: var(--paper); border-bottom: 1px solid var(--line); display: flex; align-items: stretch; padding: 0 24px; gap: 24px; }
-    .subnav-item { display: flex; align-items: center; font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: 0.2s; }
-    .subnav-item:hover { color: var(--ink); }
-    .subnav-item.active { color: var(--primary); border-bottom-color: var(--primary); }
-    .subnav-badge { background: var(--gold); color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 8px; font-weight: 600; }
-
-    /* Main Layout */
-    .main-container { height: calc(100vh - 114px); }
-    .view { display: none; height: 100%; }
-    .view.active { display: block; }
-
-    /* Chats Layout */
-    .layout { display: grid; grid-template-columns: 320px minmax(0, 1fr) 340px; height: 100%; background: var(--paper); }
-    .sidebar { border-right: 1px solid var(--line); display: flex; flex-direction: column; background: var(--paper); min-width: 0; }
-    .list-tools { padding: 16px; border-bottom: 1px solid var(--line); }
-    .search { width: 100%; padding: 10px 14px; background: var(--bg); border: 1px solid transparent; border-radius: 8px; font-size: 13px; transition: 0.2s; }
-    .search:focus { outline: none; background: #fff; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(194,155,78,0.15); }
-    .filters { display: flex; gap: 6px; overflow-x: auto; padding: 12px 16px 4px; scrollbar-width: none; }
-    .filters::-webkit-scrollbar { display: none; }
-    .filter-btn { flex: none; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--line); background: transparent; font-size: 11px; font-weight: 500; color: var(--muted); cursor: pointer; transition: 0.2s; }
-    .filter-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
-    .filter-btn:hover:not(.active) { border-color: var(--muted); }
-    
-    .chat-list { flex: 1; overflow-y: auto; }
-    .chat-row { display: flex; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); cursor: pointer; transition: 0.15s; }
-    .chat-row:hover { background: #fafafa; }
-    .chat-row.active { background: #f0f4f2; border-left: 3px solid var(--primary); }
-    .chat-row .avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-family: var(--font-head); font-weight: 700; font-size: 16px; flex: none; }
-    .chat-info { flex: 1; min-width: 0; }
-    .chat-name { font-weight: 500; font-size: 14px; display: flex; justify-content: space-between; margin-bottom: 2px; }
-    .chat-time { font-size: 11px; color: var(--muted); }
-    .chat-preview { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .chat-badges { display: flex; gap: 4px; margin-top: 6px; }
-    .badge-pill { padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
-    .badge-human { background: #fef3c7; color: #92400e; }
-    .badge-bot { background: #e5e7eb; color: #4b5563; }
-    .badge-escalated { background: #fee2e2; color: #991b1b; }
-
-    /* Middle Thread */
-    .thread { display: flex; flex-direction: column; background: var(--wa-bg) var(--wa-pattern); min-width: 0; position: relative; }
-    .thread-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); text-align: center; padding: 20px; }
-    .thread-empty h2 { font-family: var(--font-head); font-size: 32px; color: var(--primary); margin-bottom: 10px; }
-    .thread-header { background: var(--paper); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); box-shadow: var(--shadow-sm); z-index: 5; }
-    .th-user { display: flex; align-items: center; gap: 12px; }
-    .th-name { font-weight: 600; font-size: 15px; }
-    .th-sub { font-size: 12px; color: var(--muted); }
-    
-    .messages { flex: 1; overflow-y: auto; padding: 20px 40px; display: flex; flex-direction: column; gap: 2px; }
-    .msg-row { display: flex; flex-direction: column; max-width: 75%; position: relative; }
-    .msg-row.in { align-self: flex-start; }
-    .msg-row.out { align-self: flex-end; align-items: flex-end; }
-    .msg-row.tail { margin-top: 12px; }
-    .bubble { background: var(--paper); padding: 8px 12px 6px; border-radius: 8px; box-shadow: var(--shadow-sm); font-size: 14px; line-height: 1.4; word-wrap: break-word; position: relative; }
-    .msg-row.in .bubble { border-top-left-radius: 0; }
-    .msg-row.out .bubble { background: #dcf8c6; border-top-right-radius: 0; }
-    .msg-row.bot .bubble { background: #fef3c7; }
-    .msg-sender { font-size: 10px; font-weight: 600; color: var(--gold); text-transform: uppercase; margin-bottom: 2px; }
-    .msg-time { font-size: 10px; color: var(--muted); float: right; margin: 4px 0 0 12px; }
-    
-    .composer { background: #f0f0f0; padding: 12px 20px; border-top: 1px solid var(--line); display: flex; gap: 12px; align-items: center; }
-    .composer textarea { flex: 1; resize: none; border: 1px solid var(--line); border-radius: 20px; padding: 12px 16px; font-family: inherit; font-size: 14px; outline: none; max-height: 120px; }
-    .composer textarea:focus { border-color: var(--gold); }
-    .attach-btn { background: transparent; border: none; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 8px; border-radius: 50%; transition: 0.2s; }
-    .attach-btn:hover { background: #e0e0e0; color: var(--ink); }
-    .btn-send { background: var(--primary); color: #fff; border: none; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; flex: none; }
-    .btn-send:hover { background: var(--primary-hover); transform: scale(1.05); }
-    .btn-send:disabled { background: #ccc; cursor: not-allowed; transform: none; }
-
-    /* Right Panel */
-    .details { border-left: 1px solid var(--line); background: var(--paper); display: flex; flex-direction: column; overflow-y: auto; }
-    .details-head { padding: 20px; text-align: center; border-bottom: 1px solid var(--line); }
-    .details-avatar { width: 72px; height: 72px; border-radius: 50%; background: var(--primary); color: #fff; font-family: var(--font-head); font-size: 28px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; }
-    .details-name { font-family: var(--font-head); font-size: 24px; font-weight: 600; color: var(--primary); margin-bottom: 4px; }
-    .details-phone { color: var(--muted); font-size: 13px; }
-    .d-section { padding: 16px 20px; border-bottom: 1px solid var(--line); }
-    .d-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 12px; display: flex; justify-content: space-between; }
-    .d-item { background: #fafafa; border: 1px solid var(--line); border-radius: 6px; padding: 10px; margin-bottom: 8px; font-size: 13px; }
-    .d-item-title { font-weight: 500; margin-bottom: 4px; }
-    .d-item-sub { font-size: 12px; color: var(--muted); }
-
-    /* Context Menu */
-    #context-menu { position: fixed; z-index: 1000; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow-lg); padding: 6px; min-width: 160px; display: none; flex-direction: column; }
-    .ctx-item { padding: 8px 12px; font-size: 13px; color: var(--ink); cursor: pointer; border-radius: 4px; display: flex; align-items: center; gap: 8px; }
-    .ctx-item:hover { background: var(--bg); }
-
-    /* Tables for Orders, Tickets, Appointments */
-    .table-view { padding: 32px; height: 100%; overflow-y: auto; background: var(--bg); }
-    .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .table-header h2 { font-family: var(--font-head); font-size: 32px; color: var(--primary); margin: 0; }
-    .data-table { width: 100%; border-collapse: collapse; background: var(--paper); border-radius: 8px; overflow: hidden; box-shadow: var(--shadow-md); }
-    .data-table th { background: #fafafa; text-align: left; padding: 12px 16px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); border-bottom: 1px solid var(--line); }
-    .data-table td { padding: 16px; border-bottom: 1px solid var(--line); font-size: 14px; }
-    .data-table tr:hover { background: #fafafa; }
-    
-    /* Toast */
-    #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 10px; }
-    .toast { background: #1a1a1a; color: #fff; padding: 12px 20px; border-radius: 8px; box-shadow: var(--shadow-lg); font-size: 13px; font-weight: 500; animation: slideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; border-left: 4px solid var(--gold); }
-    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Inbox — Chain SaaS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--brand:#1e3a32;--gold:#b8924a;--ink:#1c1f1d;--muted:#78807b;--line:#e8e6e0;--paper:#fff;--bg:#f6f4ef;--in:#fff;--out:#e3efe8;--bot:#f7ecd3;--wall:#efe9dd;--danger:#b4332b;--ok:#2f8f5b;
+--r:12px;--sh:0 1px 2px rgba(20,30,25,.06);--shl:0 16px 40px rgba(20,30,25,.18);--head:"Cormorant Garamond",Georgia,serif;--ui:"Poppins",system-ui,sans-serif}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--ink:#ecefed;--muted:#8d9791;--line:#2a312d;--paper:#171c19;--bg:#0f1311;--in:#212824;--out:#254236;--bot:#3a3220;--wall:#121714}}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{font:14px/1.45 var(--ui);color:var(--ink);background:var(--bg);overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.top{height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:var(--paper);border-bottom:1px solid var(--line)}
+.brand{font:700 28px var(--head);color:var(--brand);display:flex;align-items:baseline;gap:10px}
+.brand i{color:var(--gold)}.brand small{font:500 11px var(--ui);letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
+.nav{display:flex;align-items:center;gap:6px}
+.nav a{padding:8px 14px;border-radius:8px;color:var(--muted);text-decoration:none;font-weight:500}
+.nav a:hover{color:var(--ink)}.nav a.on{background:var(--brand);color:#fff}
+.live{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin:0 10px}
+.live b{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 rgba(47,143,91,.5);animation:pulse 2s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 7px rgba(47,143,91,0)}100%{box-shadow:0 0 0 0 rgba(47,143,91,0)}}
+.me{display:flex;align-items:center;gap:8px;padding:4px 12px 4px 4px;border:1px solid var(--line);border-radius:30px;background:var(--paper)}
+.me .av{width:30px;height:30px;font-size:12px}
+.tabs{height:50px;display:flex;gap:28px;padding:0 24px;background:var(--paper);border-bottom:1px solid var(--line)}
+.tab{display:flex;align-items:center;gap:8px;border:0;background:none;color:var(--muted);font-weight:500;border-bottom:2px solid transparent;padding:0}
+.tab:hover{color:var(--ink)}.tab.on{color:var(--brand);border-color:var(--gold)}
+.cnt{min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--gold);color:#fff;font-size:11px;font-weight:600;display:inline-flex;align-items:center;justify-content:center}
+.cnt:empty,.cnt.z{display:none}
+.stage{height:calc(100dvh - 114px)}
+.view{display:none;height:100%}.view.on{display:block}
+.layout{display:grid;grid-template-columns:340px minmax(0,1fr) 330px;height:100%;background:var(--paper)}
+.side{display:flex;flex-direction:column;border-right:1px solid var(--line);min-height:0}
+.tools{padding:14px 16px 8px}
+.search{width:100%;padding:11px 16px;border:1px solid transparent;border-radius:24px;background:var(--bg);color:var(--ink);font:inherit}
+.search:focus{outline:0;border-color:var(--gold);background:var(--paper)}
+.pills{display:flex;gap:6px;margin-top:12px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
+.pill{flex:none;display:flex;gap:6px;align-items:center;padding:5px 13px;border:1px solid var(--line);border-radius:20px;background:none;color:var(--muted);font-size:12px;font-weight:500}
+.pill.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.pill .cnt{height:17px;min-width:17px;font-size:10px}
+.list{flex:1;overflow-y:auto}
+.row{display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line);cursor:pointer;position:relative}
+.row:hover{background:var(--bg)}.row.on{background:color-mix(in srgb,var(--gold) 14%,var(--paper))}
+.row.on::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gold)}
+.av{width:46px;height:46px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font:700 17px var(--head)}
+.ri{flex:1;min-width:0}
+.rt{display:flex;justify-content:space-between;gap:8px;font-weight:500}
+.rt span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rt .t{font-size:11px;color:var(--muted);font-weight:400;flex:none}.row.unread .rt .t{color:var(--ok);font-weight:600}
+.rp{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:13px}
+.rp span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dot{min-width:20px;height:20px;border-radius:10px;background:var(--ok);color:#fff;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;padding:0 5px;flex:none}
+.tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}
+.tag{padding:2px 9px;border-radius:10px;font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;background:var(--line);color:var(--muted)}
+.tag.h{background:#fbe9bf;color:#7a5410}.tag.e{background:#fbdcd8;color:var(--danger)}.tag.o{background:none;border:1px solid var(--line)}
+.thread{display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--wall);position:relative}
+.empty{margin:auto;text-align:center;color:var(--muted);padding:24px}
+.empty h2{font:600 38px var(--head);color:var(--brand);margin:0 0 6px}
+.th{display:none;flex-direction:column;height:100%;min-height:0}.th.on{display:flex}
+.thh{display:flex;align-items:center;gap:12px;padding:10px 18px;background:var(--paper);border-bottom:1px solid var(--line)}
+.thh .av{width:42px;height:42px;font-size:15px}
+.who{flex:1;min-width:0}.who b{font:600 20px var(--head);margin-right:6px}
+.sub{font-size:12px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.btn{padding:8px 16px;border-radius:8px;border:1px solid var(--line);background:var(--paper);font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.btn:hover{border-color:var(--ink)}.btn.p{background:var(--brand);border-color:var(--brand);color:#fff}.btn.g{background:var(--gold);border-color:var(--gold);color:#fff}
+.ib{width:36px;height:36px;border-radius:50%;border:0;background:none;color:var(--muted);display:flex;align-items:center;justify-content:center}
+.ib:hover{background:var(--bg);color:var(--ink)}
+.back{display:none}
+.alert{padding:10px 20px;background:#fbdcd8;color:var(--danger);font-size:13px;border-bottom:1px solid #f1b9b3}.alert b{font-weight:600}
+.msgs{flex:1;overflow-y:auto;padding:18px 7%;display:flex;flex-direction:column;scroll-behavior:smooth}
+.day{align-self:center;margin:14px 0 8px;padding:4px 14px;border-radius:14px;background:var(--paper);color:var(--muted);font-size:11px;font-weight:500;box-shadow:var(--sh)}
+.m{display:flex;max-width:72%;margin-top:3px;position:relative}
+.m.first{margin-top:12px}.m.in{align-self:flex-start}.m.out{align-self:flex-end}
+.b{background:var(--in);padding:8px 12px 6px;border-radius:12px;box-shadow:var(--sh);word-wrap:anywhere;position:relative;min-width:84px}
+.m.in.first .b{border-top-left-radius:3px}.m.out.first .b{border-top-right-radius:3px}
+.m.out .b{background:var(--out)}.m.bot .b{background:var(--bot)}
+.snd{font-size:11px;font-weight:600;color:var(--gold);margin-bottom:2px}
+.rq{border-left:3px solid var(--gold);background:rgba(0,0,0,.05);padding:4px 8px;border-radius:6px;margin-bottom:6px;font-size:12px;color:var(--muted)}
+.txt{white-space:pre-wrap}
+.meta{display:flex;justify-content:flex-end;align-items:center;gap:4px;font-size:10.5px;color:var(--muted);margin-top:2px}
+.tick{width:16px;height:11px}.tick.r{color:#34a0e8}.tick.f{color:var(--danger)}
+.b img,.b video{display:block;max-width:100%;max-height:340px;border-radius:8px;cursor:zoom-in;margin-bottom:4px}
+.b audio{width:240px;max-width:100%}
+.doc{display:flex;gap:10px;align-items:center;padding:8px 10px;background:rgba(0,0,0,.05);border-radius:8px;color:inherit;text-decoration:none}
+.chev{position:absolute;top:2px;right:2px;width:24px;height:24px;border:0;border-radius:50%;background:var(--in);color:var(--muted);opacity:0;font-size:12px;box-shadow:var(--sh)}
+.m:hover .chev,.chev:focus{opacity:1}.m.out .chev{background:var(--out)}
+.rx{position:absolute;bottom:-12px;display:flex;gap:2px;padding:1px 7px;border-radius:12px;background:var(--paper);border:1px solid var(--line);font-size:14px;box-shadow:var(--sh)}
+.m.in .rx{right:10px}.m.out .rx{left:10px}.m.hasrx{margin-bottom:12px}
+.strip{display:flex;justify-content:space-between;align-items:center;padding:8px 18px;background:var(--paper);border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+.comp{display:flex;align-items:flex-end;gap:10px;padding:12px 18px;background:var(--paper)}
+.comp textarea{flex:1;resize:none;max-height:130px;padding:12px 18px;border:1px solid var(--line);border-radius:22px;background:var(--bg);color:var(--ink);font:inherit}
+.comp textarea:focus{outline:0;border-color:var(--gold);background:var(--paper)}
+.comp textarea:disabled{opacity:.6}
+.send{width:44px;height:44px;border-radius:50%;border:0;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;flex:none;transition:transform .15s}
+.send:hover:not(:disabled){transform:scale(1.07)}.send:disabled{background:var(--line);color:var(--muted);cursor:not-allowed}
+.rbar{display:none;align-items:center;gap:10px;padding:8px 18px;background:var(--paper);border-top:1px solid var(--line);font-size:12.5px}
+.rbar.on{display:flex}.rbar div{flex:1;border-left:3px solid var(--gold);padding-left:8px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.det{border-left:1px solid var(--line);overflow-y:auto;background:var(--paper)}
+.dh{padding:26px 20px 18px;text-align:center;border-bottom:1px solid var(--line)}
+.dh .av{width:78px;height:78px;font-size:30px;margin:0 auto 10px}
+.dh h3{font:600 26px var(--head);margin:0;color:var(--brand)}
+.dh p{margin:2px 0 12px;color:var(--muted)}.dh .acts{display:flex;gap:8px;justify-content:center}.dh small{display:block;margin-top:12px;color:var(--muted);font-size:12px}
+.ds{padding:16px 20px;border-bottom:1px solid var(--line)}
+.dt{display:flex;justify-content:space-between;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.card b{display:flex;justify-content:space-between;font-size:12px;font-weight:600}.card p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.none{color:var(--muted);font-size:13px}
+.menu{position:fixed;z-index:60;display:none;background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shl);padding:6px;min-width:190px}
+.menu.on{display:block}
+.emo{display:flex;gap:2px;padding:4px 4px 8px;border-bottom:1px solid var(--line);margin-bottom:4px}
+.emo button{border:0;background:none;font-size:22px;width:34px;height:34px;border-radius:50%;transition:transform .12s}
+.emo button:hover{background:var(--bg);transform:scale(1.25)}
+.mi{display:flex;gap:10px;align-items:center;width:100%;padding:9px 12px;border:0;background:none;border-radius:8px;text-align:left;font-size:13px}
+.mi:hover{background:var(--bg)}
+.lb{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;cursor:zoom-out}
+.lb.on{display:flex}.lb img{max-width:92vw;max-height:92vh;border-radius:6px}
+.tv{padding:32px;height:100%;overflow:auto;background:var(--bg)}
+.tv h2{font:600 34px var(--head);color:var(--brand);margin:0 0 18px}
+table{width:100%;border-collapse:collapse;background:var(--paper);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh)}
+th{text-align:left;padding:12px 16px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);background:var(--bg)}
+td{padding:14px 16px;border-top:1px solid var(--line)}tr:hover td{background:var(--bg)}
+#toasts{position:fixed;right:20px;bottom:20px;z-index:80;display:grid;gap:8px}
+.toast{background:var(--ink);color:var(--paper);padding:11px 18px;border-radius:10px;font-size:13px;border-left:4px solid var(--gold);box-shadow:var(--shl)}
+.toast.err{border-color:var(--danger)}
+.skel{height:70px;margin:12px 16px;border-radius:10px;background:linear-gradient(90deg,var(--bg),var(--line),var(--bg));background-size:200% 100%;animation:sk 1.2s infinite}
+@keyframes sk{to{background-position:-200% 0}}
+@media(max-width:1100px){.layout{grid-template-columns:320px minmax(0,1fr)}.det{position:fixed;right:0;top:114px;bottom:0;width:min(340px,92vw);z-index:40;transform:translateX(100%);transition:transform .2s;box-shadow:var(--shl)}.layout.info .det{transform:none}}
+@media(max-width:760px){.top{padding:0 14px}.nav a:not(.on),.live,.me span{display:none}.tabs{padding:0 14px;gap:18px;overflow-x:auto}.layout{grid-template-columns:1fr}.thread{display:none}.layout.chat .side{display:none}.layout.chat .thread{display:flex}.back{display:flex}.msgs{padding:14px 10px}.m{max-width:88%}.tv{padding:16px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+</style>
 </head>
 <body>
-  <div id="toast-container"></div>
-  <div id="context-menu">
-    <div class="ctx-item" onclick="copyMessage()">Copy Text</div>
-    <div class="ctx-item" onclick="replyMessage()">Reply</div>
-    <div class="ctx-item" onclick="reactMessage()">React 👍</div>
-  </div>
-
-  <nav class="topbar">
-    <div class="brand">
-      <div class="brand-mark">Chain <span style="color: var(--gold); font-style: italic;">SaaS</span></div>
-      <div class="brand-sub">Tech Support</div>
-    </div>
-    <div class="nav-links">
-      <a href="/chain-saas/site/dashboard.html" class="nav-link">Dashboard</a>
-      <a href="/chain-saas/site/inbox.html" class="nav-link active">Inbox</a>
-      <a href="/chain-saas/site/settings.html" class="nav-link">Settings</a>
-      <button onclick="logout()" class="btn-outline" style="margin-left: 12px;">Log Out</button>
-    </div>
+<header class="top">
+  <div class="brand"><span id="bn">Chain <i>SaaS</i></span><small>Desk</small></div>
+  <nav class="nav">
+    <a href="/chain-saas/site/dashboard.html">Dashboard</a><a class="on" href="/chain-saas/site/inbox.html">Inbox</a><a href="/chain-saas/site/settings.html">Settings</a>
+    <span class="live"><b></b>Live</span>
+    <div class="me"><div class="av" id="meav" style="background:var(--brand)">?</div><span id="mem"></span></div>
+    <button class="btn" onclick="logout()" style="margin-left:6px">Log out</button>
   </nav>
-
-  <div class="subnav">
-    <div class="subnav-item active" onclick="switchView('chats', this)" id="nav-chats">Chats</div>
-    <div class="subnav-item" onclick="switchView('tickets', this)" id="nav-tickets">Tickets <span class="subnav-badge" id="count-tickets">0</span></div>
-    <div class="subnav-item" onclick="switchView('orders', this)" id="nav-orders">Orders <span class="subnav-badge" id="count-orders">0</span></div>
-    <div class="subnav-item" onclick="switchView('appointments', this)" id="nav-appointments">Appointments <span class="subnav-badge" id="count-appointments">0</span></div>
-  </div>
-
-  <div class="main-container">
-    <!-- CHATS VIEW -->
-    <div class="view active" id="view-chats">
-      <div class="layout">
-        <div class="sidebar">
-          <div class="list-tools">
-            <input type="text" id="search-input" class="search" placeholder="Search name or phone..." oninput="loadChats()">
-            <div class="filters">
-              <button class="filter-btn active" onclick="setFilter('active', this)">Active</button>
-              <button class="filter-btn" onclick="setFilter('unread', this)">Unread</button>
-              <button class="filter-btn" onclick="setFilter('human', this)">Human</button>
-              <button class="filter-btn" onclick="setFilter('escalated', this)">Escalated</button>
-            </div>
-          </div>
-          <div class="chat-list" id="chat-list"></div>
-          <div style="padding: 12px; border-top: 1px solid var(--line); text-align: center;">
-            <button class="btn-outline" onclick="seedDemo()" style="font-size: 11px; padding: 6px 12px;">+ Generate Demo Chats</button>
+</header>
+<div class="tabs" role="tablist">
+  <button class="tab on" data-v="chats">Chats <span class="cnt" id="c-chats"></span></button>
+  <button class="tab" data-v="tickets">Tickets <span class="cnt" id="c-tickets"></span></button>
+  <button class="tab" data-v="orders">Orders <span class="cnt" id="c-orders"></span></button>
+  <button class="tab" data-v="appointments">Appointments <span class="cnt" id="c-appointments"></span></button>
+</div>
+<main class="stage">
+  <section class="view on" id="v-chats">
+    <div class="layout" id="layout">
+      <aside class="side">
+        <div class="tools">
+          <input class="search" id="q" placeholder="Search name or phone" aria-label="Search chats">
+          <div class="pills" id="pills">
+            <button class="pill on" data-f="active">Active</button>
+            <button class="pill" data-f="unread">Unread <span class="cnt z" id="p-unread"></span></button>
+            <button class="pill" data-f="human">Human <span class="cnt z" id="p-human"></span></button>
+            <button class="pill" data-f="escalated">Escalated <span class="cnt z" id="p-escalated"></span></button>
+            <button class="pill" data-f="resolved">Resolved</button>
           </div>
         </div>
-
-        <div class="thread">
-          <div class="thread-empty" id="thread-empty">
-            <h2>No chat selected</h2>
-            <p>Select a conversation to view messages.</p>
+        <div class="list" id="list"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
+        <div style="padding:10px;text-align:center;border-top:1px solid var(--line)"><button class="btn" onclick="seed()" style="font-size:11px">Add demo chats</button></div>
+      </aside>
+      <section class="thread">
+        <div class="empty" id="empty"><h2 id="eh">Your inbox</h2><p>Select a chat to read the conversation and reply.</p></div>
+        <div class="th" id="th">
+          <div class="thh">
+            <button class="ib back" onclick="closeChat()" aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+            <div class="av" id="tav"></div>
+            <div class="who"><div><b id="tn"></b><span id="tt"></span></div><div class="sub" id="ts"></div></div>
+            <button class="btn" id="bt"></button><button class="btn p" id="br" onclick="act('resolve')">Resolve</button>
+            <button class="ib" onclick="$('#layout').classList.toggle('info')" aria-label="Customer details"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/></svg></button>
           </div>
-          <div id="thread-active" style="display: none; flex-direction: column; height: 100%;">
-            <div class="thread-header">
-              <div class="th-user">
-                <div class="avatar" id="th-avatar" style="width: 40px; height: 40px; font-size: 14px; background: var(--primary); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">?</div>
-                <div>
-                  <div class="th-name" id="th-name">Loading...</div>
-                  <div class="th-sub" id="th-sub">+256...</div>
-                </div>
-              </div>
-              <div style="display: flex; gap: 8px;">
-                <button class="btn-outline" id="btn-takeover" onclick="takeover()" style="font-size: 11px; padding: 6px 12px;">Take Over</button>
-                <button class="btn-outline" id="btn-resolve" onclick="resolveChat()" style="font-size: 11px; padding: 6px 12px; background: var(--primary); color: white; border: none;">Resolve</button>
-              </div>
-            </div>
-            <div class="messages" id="messages"></div>
-            <div class="composer">
-              <button class="attach-btn" onclick="document.getElementById('file-input').click()">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
-              </button>
-              <input type="file" id="file-input" style="display:none" onchange="uploadMedia(this)">
-              <textarea id="composer-input" rows="1" placeholder="Type a reply..." onkeydown="handleKey(event)" oninput="autoGrow(this)"></textarea>
-              <button class="btn-send" onclick="sendReply()" id="btn-send">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-              </button>
-            </div>
+          <div class="alert" id="al" hidden></div>
+          <div class="msgs" id="msgs"></div>
+          <div class="strip" id="strip" hidden><span>The bot is answering this chat. Sending a message pauses the bot.</span><button class="btn" onclick="act('takeover')">Take over</button></div>
+          <div class="rbar" id="rbar"><div id="rtx"></div><button class="ib" onclick="setReply(null)" aria-label="Cancel reply">✕</button></div>
+          <div class="comp">
+            <button class="ib" onclick="$('#file').click()" aria-label="Attach file"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21.4 11l-9.2 9.2a6 6 0 01-8.5-8.5l9.2-9.2a4 4 0 015.7 5.7l-9.2 9.2a2 2 0 01-2.8-2.8l8.5-8.5"/></svg></button>
+            <input type="file" id="file" hidden>
+            <button class="btn g" id="tpl" hidden>Send a template</button>
+            <textarea id="ci" rows="1" placeholder="Write a reply"></textarea>
+            <button class="send" id="sb" aria-label="Send"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg></button>
           </div>
         </div>
-
-        <div class="details" id="details-panel">
-          <div class="thread-empty" style="padding: 40px 20px;">
-            <p>Customer details will appear here.</p>
-          </div>
-        </div>
-      </div>
+      </section>
+      <aside class="det" id="det"><div class="empty"><p>Customer details, tickets and orders show here.</p></div></aside>
     </div>
+  </section>
+  <section class="view" id="v-tickets"><div class="tv"><h2>Support tickets</h2><table><thead><tr><th>Ref</th><th>Customer</th><th>Issue</th><th>Status</th><th>Date</th></tr></thead><tbody id="r-tickets"></tbody></table></div></section>
+  <section class="view" id="v-orders"><div class="tv"><h2>Orders</h2><table><thead><tr><th>Ref</th><th>Customer</th><th>Items</th><th>Address</th><th>Status</th></tr></thead><tbody id="r-orders"></tbody></table></div></section>
+  <section class="view" id="v-appointments"><div class="tv"><h2>Appointments</h2><table><thead><tr><th>Ref</th><th>Customer</th><th>When</th><th>Purpose</th><th>Status</th></tr></thead><tbody id="r-appointments"></tbody></table></div></section>
+</main>
+<div class="menu" id="menu" role="menu"></div>
+<div class="lb" id="lb"><img alt=""></div>
+<div id="toasts" aria-live="polite"></div>
 
-    <!-- TICKETS VIEW -->
-    <div class="view" id="view-tickets">
-      <div class="table-view">
-        <div class="table-header"><h2>Support Tickets</h2></div>
-        <table class="data-table">
-          <thead><tr><th>Ref</th><th>Customer</th><th>Issue</th><th>Status</th><th>Date</th></tr></thead>
-          <tbody id="ticket-rows"></tbody>
-        </table>
-      </div>
-    </div>
+<script>
+const BASE='/chain-saas', API=BASE+'/api/chats', csrf=localStorage.getItem('csrf'), $=s=>document.querySelector(s);
+const EMOJI=['👍','❤️','😂','😮','🙏'], COLORS=['#1e3a32','#3b4a6b','#6b3f5e','#7a5a2b','#2e5a63','#53413a'];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let phone=null, filter='active', msgs=[], conv=null, sig='', replyTo=null, menuMsg=null, timer;
 
-    <!-- ORDERS VIEW -->
-    <div class="view" id="view-orders">
-      <div class="table-view">
-        <div class="table-header"><h2>Orders</h2></div>
-        <table class="data-table">
-          <thead><tr><th>Ref</th><th>Customer</th><th>Items</th><th>Address</th><th>Status</th></tr></thead>
-          <tbody id="order-rows"></tbody>
-        </table>
-      </div>
-    </div>
+const color=s=>COLORS[[...String(s)].reduce((a,c)=>a+c.charCodeAt(0),0)%COLORS.length];
+const ini=n=>{const p=String(n||'').trim().split(/\s+/).filter(Boolean);return p.length?(p[0][0]+(p[1]?p[1][0]:'')).toUpperCase():'#'};
+const hm=d=>new Date(d).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+function listTime(d){if(!d)return'';const t=new Date(d),n=new Date(),days=(n-t)/864e5;
+  if(t.toDateString()===n.toDateString())return hm(d);
+  if(days<6)return t.toLocaleDateString([], {weekday:'short'});
+  return t.toLocaleDateString([], {day:'2-digit',month:'2-digit',year:'2-digit'})}
+function dayLabel(d){const t=new Date(d),n=new Date();
+  if(t.toDateString()===n.toDateString())return'Today';
+  if(new Date(n-864e5).toDateString()===t.toDateString())return'Yesterday';
+  return t.toLocaleDateString([], {weekday:'long',day:'numeric',month:'long'})}
+const mediaUrl=p=>!p?'':/^https?:/.test(p)?p:(p.startsWith(BASE)?p:BASE+p);
+function toast(m,err){const e=document.createElement('div');e.className='toast'+(err?' err':'');e.textContent=m;$('#toasts').append(e);setTimeout(()=>e.remove(),3200)}
+async function api(path,opt={}){
+  const h={'X-CSRF-Token':csrf};if(opt.body&&!(opt.body instanceof FormData)){h['Content-Type']='application/json';opt.body=JSON.stringify(opt.body)}
+  const r=await fetch(API+path,{...opt,headers:h});
+  if(r.status===401){location.href=BASE+'/site/login.html';throw new Error('auth')}
+  if(!r.ok){let m='Something went wrong.';try{m=(await r.json()).error||m}catch(e){}throw new Error(m)}
+  return r.json()}
 
-    <!-- APPOINTMENTS VIEW -->
-    <div class="view" id="view-appointments">
-      <div class="table-view">
-        <div class="table-header"><h2>Appointments</h2></div>
-        <table class="data-table">
-          <thead><tr><th>Ref</th><th>Customer</th><th>Date & Time</th><th>Purpose</th><th>Status</th></tr></thead>
-          <tbody id="appointment-rows"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
+/* ---------- boot: tenant + branding ---------- */
+(async()=>{try{
+  const r=await fetch(BASE+'/api/auth/me',{headers:{'X-CSRF-Token':csrf}});if(!r.ok)return;
+  const {user,tenant:t}=await r.json();
+  const b=t.primary_color||t.brand_color||t.brand_primary, g=t.accent_color||t.brand_accent||t.gold_color;
+  if(b)document.documentElement.style.setProperty('--brand',b);if(g)document.documentElement.style.setProperty('--gold',g);
+  $('#bn').textContent=t.name;$('#eh').textContent=t.name;$('#mem').textContent=(user.name||user.email||'');$('#meav').textContent=ini(user.name||user.email);
+  document.title='Inbox — '+t.name;
+}catch(e){}})();
 
-  <script>
-    let csrf = localStorage.getItem('csrf');
-    let currentFilter = 'active';
-    let currentPhone = null;
-    let selectedMessageText = '';
+/* ---------- chat list ---------- */
+async function summary(){try{const {summary:s}=await api('/summary');
+  const set=(id,n)=>{const e=$(id);e.textContent=n||'';e.classList.toggle('z',!n)};
+  set('#p-unread',s.unread_chats);set('#p-human',s.human_chats);set('#p-escalated',s.escalated_chats);
+  set('#c-chats',s.unread_chats);set('#c-tickets',s.new_issues);set('#c-orders',s.new_orders);set('#c-appointments',s.new_appointments)}catch(e){}}
+async function loadChats(){
+  try{const {conversations:cs}=await api(`/conversations?filter=${filter}&search=${encodeURIComponent($('#q').value.trim())}`);
+    $('#list').innerHTML=cs.length?cs.map(c=>{
+      const n=c.name||'+'+c.phone, tags=[c.status==='escalated'?'<span class="tag e">Escalated</span>':'',
+        c.mode==='human'?'<span class="tag h">Human</span>':'<span class="tag">Bot</span>',
+        c.open_orders?`<span class="tag o">${c.open_orders} order${c.open_orders>1?'s':''}</span>`:'',
+        c.open_issues?`<span class="tag o">${c.open_issues} issue${c.open_issues>1?'s':''}</span>`:''].join('');
+      return `<div class="row ${c.phone===phone?'on':''} ${c.unread_count?'unread':''}" data-p="${esc(c.phone)}" tabindex="0">
+        <div class="av" style="background:${color(c.phone)}">${esc(ini(c.name))}</div>
+        <div class="ri"><div class="rt"><span>${esc(n)}</span><span class="t">${listTime(c.last_message_at)}</span></div>
+        <div class="rp"><span>${esc(c.last_message_preview||'No messages yet')}</span>${c.unread_count?`<span class="dot">${c.unread_count}</span>`:''}</div>
+        <div class="tags">${tags}</div></div></div>`}).join(''):'<div class="empty"><p>No chats match this view.</p></div>';
+  }catch(e){}}
+$('#list').addEventListener('click',e=>{const r=e.target.closest('.row');if(r)openChat(r.dataset.p)});
+$('#list').addEventListener('keydown',e=>{if(e.key==='Enter'){const r=e.target.closest('.row');if(r)openChat(r.dataset.p)}});
+$('#pills').addEventListener('click',e=>{const b=e.target.closest('.pill');if(!b)return;
+  document.querySelectorAll('.pill').forEach(p=>p.classList.toggle('on',p===b));filter=b.dataset.f;loadChats()});
+let qt;$('#q').addEventListener('input',()=>{clearTimeout(qt);qt=setTimeout(loadChats,250)});
 
-    // --- UI Helpers ---
-    function showToast(msg, type = 'success') {
-      const el = document.createElement('div');
-      el.className = 'toast';
-      el.style.borderLeftColor = type === 'error' ? '#dc3545' : 'var(--gold)';
-      el.textContent = msg;
-      document.getElementById('toast-container').appendChild(el);
-      setTimeout(() => el.remove(), 3000);
-    }
+/* ---------- open chat ---------- */
+async function openChat(p){
+  phone=p;sig='';setReply(null);$('#layout').classList.add('chat');$('#layout').classList.remove('info');
+  $('#empty').style.display='none';$('#th').classList.add('on');$('#msgs').innerHTML='';
+  await Promise.all([loadDetails(),loadMessages()]);loadChats();
+}
+function closeChat(){phone=null;$('#layout').classList.remove('chat');$('#th').classList.remove('on');$('#empty').style.display='';loadChats()}
+async function loadDetails(){
+  const d=await api('/conversations/'+encodeURIComponent(phone));conv=d.conversation;
+  const n=conv.name||'+'+phone, c=d.customer||{};
+  $('#tav').textContent=ini(conv.name);$('#tav').style.background=color(phone);$('#tn').textContent=n;
+  $('#tt').innerHTML=(conv.status==='escalated'?'<span class="tag e">Escalated</span> ':'')+(conv.status==='resolved'?'<span class="tag">Resolved</span> ':'')+(conv.mode==='human'?'<span class="tag h">Human</span>':'<span class="tag">Bot</span>');
+  $('#ts').textContent='+'+phone;
+  const bt=$('#bt');bt.textContent=conv.mode==='human'?'Hand back to bot':'Take over';bt.onclick=()=>act(conv.mode==='human'?'handback':'takeover');
+  const open=(d.issues||[]).find(i=>['new','in_progress'].includes(i.status)),al=$('#al');
+  al.hidden=conv.status!=='escalated';al.innerHTML=conv.status==='escalated'?`<b>Needs a person:</b> ${esc(open?open.summary:'The bot asked for a human to step in.')}`:'';
+  const sec=(t,a,f)=>`<div class="ds"><div class="dt"><span>${t}</span><span>${a.length}</span></div>${a.length?a.map(f).join(''):'<div class="none">Nothing yet.</div>'}</div>`;
+  $('#det').innerHTML=`<div class="dh"><div class="av" style="background:${color(phone)}">${esc(ini(conv.name))}</div><h3>${esc(n)}</h3><p>+${esc(phone)}</p>
+    <div class="acts"><button class="btn" onclick="navigator.clipboard.writeText('+${esc(phone)}');toast('Number copied')">Copy number</button><a class="btn" style="text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/${esc(phone)}">WhatsApp</a></div>
+    ${c.created_at?`<small>Customer since ${new Date(c.created_at).toLocaleDateString([], {day:'numeric',month:'short',year:'numeric'})}</small>`:''}</div>`+
+    sec('Tickets &amp; requests',d.issues||[],i=>`<div class="card"><b><span>${esc(i.ref)}</span><span class="tag ${i.status==='new'?'e':''}">${esc(i.status)}</span></b><p>${esc(i.summary)}</p></div>`)+
+    sec('Orders',d.orders||[],o=>`<div class="card"><b><span>${esc(o.ref)}</span><span class="tag">${esc(o.status)}</span></b><p>${esc(o.items||'No items listed')}</p></div>`)+
+    sec('Appointments',d.appointments||[],a=>`<div class="card"><b><span>${esc(a.ref)}</span><span class="tag">${esc(a.status)}</span></b><p>${esc(a.appt_date||'')} ${esc(a.appt_time||'')} ${esc(a.purpose||'')}</p></div>`);
+}
 
-    function autoGrow(el) {
-      el.style.height = 'auto';
-      el.style.height = Math.min(el.scrollHeight, 120) + 'px';
-    }
+/* ---------- messages ---------- */
+async function loadMessages(){
+  if(!phone)return;const p=phone;
+  const {messages}=await api(`/conversations/${encodeURIComponent(p)}/messages`);if(p!==phone)return;
+  const s=messages.map(m=>[m.id,m.delivery_status,m.reaction,m.customer_reaction,m.starred].join()).join('|');
+  if(s===sig)return;sig=s;msgs=messages;renderMsgs();updateComposer();
+}
+function ticks(m){if(m.direction!=='out')return'';const st=m.delivery_status;
+  if(st==='failed')return `<span class="tick f" title="${esc(m.error_text||'Not delivered')}">⚠</span>`;
+  const two=st==='delivered'||st==='read';
+  return `<svg class="tick ${st==='read'?'r':''}" viewBox="0 0 16 11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6l3 3 6-7"/>${two?'<path d="M6 8l1 1 6-7"/>':''}</svg>`}
+function body(m){
+  if(m.is_deleted)return `<em style="color:var(--muted)">${esc(m.body||'This message was deleted')}</em>`;
+  const u=mediaUrl(m.media_name),mt=(m.media_mime||m.msg_type||'');
+  if(m.has_media&&u){const cap=m.body&&m.body!==m.media_name?`<div class="txt">${esc(m.body)}</div>`:'';
+    if(mt.startsWith('image'))return `<img src="${esc(u)}" alt="Photo" loading="lazy" data-lb="${esc(u)}">${cap}`;
+    if(mt.startsWith('video'))return `<video src="${esc(u)}" controls preload="metadata"></video>${cap}`;
+    if(mt.startsWith('audio'))return `<audio src="${esc(u)}" controls preload="metadata"></audio>`;
+    return `<a class="doc" href="${esc(u)}" target="_blank" rel="noopener">📄 <span>${esc(m.body||'Document')}</span></a>`}
+  if(m.msg_type==='location'&&m.latitude)return `<a class="doc" target="_blank" rel="noopener" href="https://maps.google.com/?q=${m.latitude},${m.longitude}">📍 View location</a>${m.body?`<div class="txt">${esc(m.body)}</div>`:''}`;
+  return `<div class="txt">${esc(m.body)}</div>`}
+function renderMsgs(){
+  const box=$('#msgs'),near=box.scrollHeight-box.scrollTop-box.clientHeight<140||!box.children.length;
+  let html='',lastDay='',prev=null;
+  msgs.forEach(m=>{
+    const day=new Date(m.created_at).toDateString();if(day!==lastDay){html+=`<div class="day">${dayLabel(m.created_at)}</div>`;lastDay=day;prev=null}
+    const first=!prev||prev.direction!==m.direction||prev.sender_type!==m.sender_type||(new Date(m.created_at)-new Date(prev.created_at))>3e5;prev=m;
+    const cls=m.direction==='in'?'in':(m.sender_type==='bot'?'out bot':'out');
+    const rx=(m.reaction||m.customer_reaction)?`<span class="rx">${esc(m.customer_reaction||'')}${esc(m.reaction||'')}</span>`:'';
+    html+=`<div class="m ${cls} ${first?'first':''} ${rx?'hasrx':''}" data-id="${m.id}">
+      <div class="b">${first&&m.direction==='out'?`<div class="snd">${m.sender_type==='bot'?'Bot':'You'}</div>`:''}${body(m)}
+      <div class="meta">${m.starred?'★':''}<span>${hm(m.created_at)}</span>${ticks(m)}</div>
+      <button class="chev" aria-label="Message options">▾</button>${rx}</div></div>`});
+  box.innerHTML=html||'<div class="empty"><p>No messages yet.</p></div>';
+  if(near)box.scrollTop=box.scrollHeight;
+}
+function updateComposer(){
+  const lastIn=[...msgs].reverse().find(m=>m.direction==='in'),closed=!lastIn||Date.now()-new Date(lastIn.created_at)>864e5;
+  const ci=$('#ci');ci.disabled=closed;$('#sb').disabled=closed;$('#tpl').hidden=!closed;$('#file').disabled=closed;
+  ci.placeholder=closed?'The 24-hour window has closed. Free-form replies are not allowed.':'Write a reply';
+  $('#strip').hidden=!(conv&&conv.mode==='bot'&&!closed);
+  if(closed&&!$('#tt').textContent.includes('closed'))$('#ts').innerHTML='+'+esc(phone)+' <span class="tag">Window closed</span>';
+}
+$('#tpl').onclick=()=>toast('Template messages are not set up yet.',1);
 
-    function handleKey(e) {
-      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendReply(); }
-    }
+/* ---------- context menu: reactions, reply, copy, star ---------- */
+const menu=$('#menu');
+function openMenu(id,x,y){
+  menuMsg=msgs.find(m=>m.id==id);if(!menuMsg)return;
+  const canReact=!!menuMsg.wa_message_id||true;
+  menu.innerHTML=(menuMsg.direction==='in'?`<div class="emo">${EMOJI.map(e=>`<button data-e="${e}" aria-label="React ${e}">${e}</button>`).join('')}</div>`:'')+
+   `<button class="mi" data-a="reply">↩ Reply</button><button class="mi" data-a="copy">⧉ Copy text</button><button class="mi" data-a="star">${menuMsg.starred?'☆ Remove star':'★ Star message'}</button>`+
+   (menuMsg.reaction?`<button class="mi" data-a="unreact">✕ Remove my reaction</button>`:'');
+  menu.classList.add('on');
+  const w=menu.offsetWidth,h=menu.offsetHeight;menu.style.left=Math.max(8,Math.min(x,innerWidth-w-8))+'px';menu.style.top=Math.max(8,Math.min(y,innerHeight-h-8))+'px';
+}
+$('#msgs').addEventListener('contextmenu',e=>{const m=e.target.closest('.m');if(!m)return;e.preventDefault();openMenu(m.dataset.id,e.clientX,e.clientY)});
+$('#msgs').addEventListener('click',e=>{
+  const lb=e.target.closest('[data-lb]');if(lb){$('#lb img').src=lb.dataset.lb;$('#lb').classList.add('on');return}
+  const c=e.target.closest('.chev');if(c){const r=c.getBoundingClientRect();openMenu(c.closest('.m').dataset.id,r.left-150,r.bottom+4)}});
+$('#lb').onclick=()=>$('#lb').classList.remove('on');
+document.addEventListener('click',e=>{if(!e.target.closest('#menu,.chev'))menu.classList.remove('on')});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){menu.classList.remove('on');$('#lb').classList.remove('on');setReply(null)}});
+menu.addEventListener('click',async e=>{
+  const m=menuMsg,b=e.target.closest('button');if(!b||!m)return;menu.classList.remove('on');
+  try{
+    if(b.dataset.e){await api(`/conversations/${encodeURIComponent(phone)}/messages/${m.id}/react`,{method:'POST',body:{emoji:m.reaction===b.dataset.e?'':b.dataset.e}});toast('Reaction sent');}
+    else if(b.dataset.a==='unreact'){await api(`/conversations/${encodeURIComponent(phone)}/messages/${m.id}/react`,{method:'POST',body:{emoji:''}})}
+    else if(b.dataset.a==='copy'){await navigator.clipboard.writeText(m.body||'');toast('Copied');return}
+    else if(b.dataset.a==='reply'){setReply(m);return}
+    else if(b.dataset.a==='star'){await api(`/conversations/${encodeURIComponent(phone)}/messages/${m.id}/star`,{method:'POST',body:{starred:!m.starred}})}
+    sig='';loadMessages();
+  }catch(err){toast(err.message,1)}});
 
-    // --- View Switching ---
-    function switchView(view, el) {
-      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-      document.querySelectorAll('.subnav-item').forEach(i => i.classList.remove('active'));
-      document.getElementById('view-' + view).classList.add('active');
-      el.classList.add('active');
+/* ---------- compose ---------- */
+function setReply(m){replyTo=m;$('#rbar').classList.toggle('on',!!m);$('#rtx').textContent=m?(m.body||'Attachment'):'';if(m)$('#ci').focus()}
+const ci=$('#ci');
+ci.addEventListener('input',()=>{ci.style.height='auto';ci.style.height=Math.min(ci.scrollHeight,130)+'px'});
+ci.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}});
+$('#sb').onclick=send;
+async function send(){
+  const text=ci.value.trim();if(!text||!phone||ci.disabled)return;
+  $('#sb').disabled=true;
+  try{await api(`/conversations/${encodeURIComponent(phone)}/messages`,{method:'POST',body:{text,replyTo:replyTo?replyTo.id:undefined}});
+    ci.value='';ci.style.height='auto';setReply(null);sig='';await Promise.all([loadMessages(),loadDetails()]);loadChats()}
+  catch(e){toast(e.message,1)}
+  $('#sb').disabled=false;ci.focus()}
+$('#file').onchange=async e=>{const f=e.target.files[0];if(!f||!phone)return;const fd=new FormData();fd.append('file',f);
+  toast('Sending file…');try{await api(`/conversations/${encodeURIComponent(phone)}/media`,{method:'POST',body:fd});sig='';loadMessages();loadChats()}catch(err){toast(err.message,1)}e.target.value=''};
 
-      if (view === 'tickets') loadTickets();
-      if (view === 'orders') loadOrders();
-      if (view === 'appointments') loadAppointments();
-    }
+/* ---------- actions ---------- */
+async function act(a){if(!phone)return;
+  try{await api(`/conversations/${encodeURIComponent(phone)}/${a}`,{method:'POST'});
+    toast({takeover:'You are now handling this chat.',handback:'The bot has resumed.',resolve:'Chat resolved.'}[a]);
+    if(a==='resolve')return closeChat();
+    await Promise.all([loadDetails(),loadMessages()]);updateComposer();loadChats();summary()}
+  catch(e){toast(e.message,1)}}
 
-    // --- Load Chat List ---
-    async function loadChats() {
-      const search = document.getElementById('search-input').value;
-      const res = await fetch(`/chain-saas/api/chats/conversations?filter=${currentFilter}&search=${search}`, { headers: { 'X-CSRF-Token': csrf } });
-      if (!res.ok) return window.location.href = '/chain-saas/site/login.html';
-      
-      const { conversations } = await res.json();
-      const list = document.getElementById('chat-list');
-      list.innerHTML = '';
+/* ---------- tabs + tables ---------- */
+const pill=(s,hot)=>`<span class="tag ${s===hot?'e':''}">${esc(s)}</span>`;
+const loaders={
+  tickets:async()=>{const {tickets}=await api('/tickets');$('#r-tickets').innerHTML=tickets.map(t=>`<tr><td>${esc(t.ref)}</td><td>${esc(t.customer_name||t.phone)}</td><td>${esc(t.summary)}</td><td>${pill(t.status,'new')}</td><td>${new Date(t.created_at).toLocaleDateString()}</td></tr>`).join('')||'<tr><td colspan=5>No tickets yet.</td></tr>'},
+  orders:async()=>{const {orders}=await api('/orders');$('#r-orders').innerHTML=orders.map(o=>`<tr><td>${esc(o.ref)}</td><td>${esc(o.customer_name||o.phone)}</td><td>${esc(o.items)}</td><td>${esc(o.delivery_address)}</td><td>${pill(o.status,'new')}</td></tr>`).join('')||'<tr><td colspan=5>No orders yet.</td></tr>'},
+  appointments:async()=>{const {appointments:a}=await api('/appointments');$('#r-appointments').innerHTML=a.map(x=>`<tr><td>${esc(x.ref)}</td><td>${esc(x.customer_name||x.phone)}</td><td>${esc(x.appt_date)} ${esc(x.appt_time)}</td><td>${esc(x.purpose)}</td><td>${pill(x.status,'new')}</td></tr>`).join('')||'<tr><td colspan=5>No appointments yet.</td></tr>'}};
+document.querySelector('.tabs').addEventListener('click',e=>{const t=e.target.closest('.tab');if(!t)return;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+t.dataset.v));
+  if(loaders[t.dataset.v])loaders[t.dataset.v]().catch(()=>{})});
+async function seed(){try{await api('/seed-demo',{method:'POST'});toast('Demo chats added');loadChats();summary()}catch(e){toast(e.message,1)}}
+async function logout(){await fetch(BASE+'/api/auth/logout',{method:'POST',headers:{'X-CSRF-Token':csrf}});localStorage.removeItem('csrf');location.href=BASE+'/site/index.html'}
 
-      if (conversations.length === 0) {
-        list.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--muted); font-size: 13px;">No chats found.</div>';
-        return;
-      }
-
-      conversations.forEach(c => {
-        const initials = c.name ? c.name.substring(0, 2).toUpperCase() : '#';
-        const activeClass = currentPhone === c.phone ? 'active' : '';
-        const badges = [];
-        if (c.mode === 'human') badges.push('<span class="badge-pill badge-human">Human</span>');
-        else badges.push('<span class="badge-pill badge-bot">Bot</span>');
-        if (c.status === 'escalated') badges.push('<span class="badge-pill badge-escalated">Escalated</span>');
-
-        list.innerHTML += `
-          <div class="chat-row ${activeClass}" onclick="openChat('${c.phone}')">
-            <div class="avatar">${initials}</div>
-            <div class="chat-info">
-              <div class="chat-name"><span>${c.name || '+' + c.phone}</span><span class="chat-time">${new Date(c.last_message_at || Date.now()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></div>
-              <div class="chat-preview">${c.last_message_preview || 'No messages yet'}</div>
-              <div class="chat-badges">${badges.join('')}</div>
-            </div>
-          </div>
-        `;
-      });
-    }
-
-    function setFilter(f, btn) {
-      currentFilter = f;
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      loadChats();
-    }
-
-    // --- Open Chat ---
-    async function openChat(phone) {
-      currentPhone = phone;
-      loadChats();
-
-      document.getElementById('thread-empty').style.display = 'none';
-      document.getElementById('thread-active').style.display = 'flex';
-
-      const res = await fetch('/chain-saas/api/chats/conversations/' + phone, { headers: { 'X-CSRF-Token': csrf } });
-      if (res.ok) {
-        const { conversation, orders, issues } = await res.json();
-        document.getElementById('th-name').textContent = conversation.name || '+' + phone;
-        document.getElementById('th-sub').textContent = '+' + phone;
-        
-        const initials = conversation.name ? conversation.name.substring(0, 2).toUpperCase() : '#';
-        let orderHtml = orders.map(o => `<div class="d-item"><div class="d-item-title">${o.ref}</div><div class="d-item-sub">${o.items || 'No items'}</div></div>`).join('');
-        let issueHtml = issues.map(i => `<div class="d-item"><div class="d-item-title">${i.ref}</div><div class="d-item-sub">${i.summary}</div></div>`).join('');
-        
-        document.getElementById('details-panel').innerHTML = `
-          <div class="details-head">
-            <div class="details-avatar">${initials}</div>
-            <div class="details-name">${conversation.name || 'Unknown'}</div>
-            <div class="details-phone">+${phone}</div>
-          </div>
-          <div class="d-section"><div class="d-title">Tickets & Issues <span>${issues.length}</span></div>${issueHtml || '<div class="d-item-sub">No open tickets.</div>'}</div>
-          <div class="d-section"><div class="d-title">Recent Orders <span>${orders.length}</span></div>${orderHtml || '<div class="d-item-sub">No recent orders.</div>'}</div>
-        `;
-        
-        const btnTakeover = document.getElementById('btn-takeover');
-        if (conversation.mode === 'human') {
-          btnTakeover.textContent = 'Handback to Bot'; btnTakeover.onclick = handback;
-        } else {
-          btnTakeover.textContent = 'Take Over'; btnTakeover.onclick = takeover;
-        }
-      }
-      loadMessages(phone);
-    }
-
-    // --- Messages ---
-    async function loadMessages(phone) {
-      const res = await fetch('/chain-saas/api/chats/conversations/' + phone + '/messages', { headers: { 'X-CSRF-Token': csrf } });
-      if (!res.ok) return;
-      
-      const { messages } = await res.json();
-      const msgContainer = document.getElementById('messages');
-      msgContainer.innerHTML = '';
-
-      messages.forEach(m => {
-        const time = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const sender = m.sender_type === 'customer' ? '' : `<div class="msg-sender">${m.sender_type}</div>`;
-        const dirClass = m.direction === 'in' ? 'in' : (m.sender_type === 'bot' ? 'out bot' : 'out');
-        
-        // Render different bubble content based on message type
-        let bubbleContent = '';
-        
-        if (m.has_media && m.media_name) {
-          const ext = m.media_name.split('.').pop().toLowerCase();
-          if (['jpg', 'jpeg', 'png', 'webp'].includes(ext)) {
-            bubbleContent = `<img src="${m.media_name}" style="max-width: 100%; border-radius: 8px; cursor: pointer;" onclick="window.open('${m.media_name}', '_blank')">`;
-          } else if (['mp4', '3gp'].includes(ext)) {
-            bubbleContent = `<video src="${m.media_name}" controls style="max-width: 100%; border-radius: 8px;"></video>`;
-          } else if (['mp3', 'ogg', 'wav', 'aac'].includes(ext)) {
-            bubbleContent = `<audio src="${m.media_name}" controls style="max-width: 100%;"></audio>`;
-          } else {
-            bubbleContent = `<a href="${m.media_name}" target="_blank" style="color: var(--primary); text-decoration: underline;">📄 Download: ${m.body}</a>`;
-          }
-        } else if (m.msg_type === 'location' && m.latitude) {
-          bubbleContent = `<a href="https://maps.google.com/?q=${m.latitude},${m.longitude}" target="_blank" style="color: var(--primary);">📍 View Location</a><br>${m.body}`;
-        } else {
-          bubbleContent = m.is_deleted ? `<em style="color: var(--muted);">${m.body}</em>` : m.body;
-        }
-
-        // Add right-click listener
-        const msgId = `msg-${m.id}`;
-        msgContainer.innerHTML += `
-          <div class="msg-row ${dirClass}" id="${msgId}" oncontextmenu="showContextMenu(event, '${m.body.replace(/'/g, "\\'")}')">
-            <div class="bubble">
-              ${sender}
-              ${bubbleContent}
-              ${m.customer_reaction ? `<div style="font-size: 20px; margin-top: 4px;">${m.customer_reaction}</div>` : ''}
-              <span class="msg-time">${time}</span>
-            </div>
-          </div>
-        `;
-      });
-      msgContainer.scrollTop = msgContainer.scrollHeight;
-    }
-
-    // --- Send Reply ---
-    async function sendReply() {
-      if (!currentPhone) return;
-      const input = document.getElementById('composer-input');
-      const text = input.value.trim();
-      if (!text) return;
-
-      input.disabled = true;
-      document.getElementById('btn-send').disabled = true;
-
-      const res = await fetch('/chain-saas/api/chats/conversations/' + currentPhone + '/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
-        body: JSON.stringify({ text })
-      });
-
-      if (res.ok) {
-        input.value = '';
-        autoGrow(input);
-        loadMessages(currentPhone);
-        loadChats();
-      } else {
-        showToast('Failed to send message', 'error');
-      }
-
-      input.disabled = false;
-      document.getElementById('btn-send').disabled = false;
-      input.focus();
-    }
-
-    // --- Media Upload ---
-    async function uploadMedia(input) {
-      if (!input.files || !input.files[0] || !currentPhone) return;
-      const file = input.files[0];
-      
-      const formData = new FormData();
-      formData.append('file', file);
-
-      showToast('Uploading media...');
-      
-      const res = await fetch('/chain-saas/api/chats/conversations/' + currentPhone + '/media', {
-        method: 'POST',
-        headers: { 'X-CSRF-Token': csrf },
-        body: formData
-      });
-
-      if (res.ok) {
-        showToast('Media sent!');
-        loadMessages(currentPhone);
-        loadChats();
-      } else {
-        showToast('Failed to upload media.', 'error');
-      }
-      input.value = ''; // Reset input
-    }
-
-    // --- Context Menu ---
-    function showContextMenu(e, text) {
-      e.preventDefault();
-      selectedMessageText = text;
-      const menu = document.getElementById('context-menu');
-      menu.style.display = 'flex';
-      menu.style.left = e.pageX + 'px';
-      menu.style.top = e.pageY + 'px';
-    }
-    
-    document.addEventListener('click', () => document.getElementById('context-menu').style.display = 'none');
-    
-    function copyMessage() {
-      navigator.clipboard.writeText(selectedMessageText);
-      showToast('Message copied!');
-    }
-    function replyMessage() { showToast('Reply feature coming soon!'); }
-    function reactMessage() { showToast('Reaction sent!'); }
-
-    // --- Actions ---
-    async function takeover() {
-      if (!currentPhone) return;
-      await fetch(`/chain-saas/api/chats/conversations/${currentPhone}/takeover`, { method: 'POST', headers: { 'X-CSRF-Token': csrf } });
-      showToast('You are now handling this chat.');
-      openChat(currentPhone);
-    }
-
-    async function handback() {
-      if (!currentPhone) return;
-      await fetch(`/chain-saas/api/chats/conversations/${currentPhone}/handback`, { method: 'POST', headers: { 'X-CSRF-Token': csrf } });
-      showToast('Bot has resumed.');
-      openChat(currentPhone);
-    }
-
-    async function resolveChat() {
-      if (!currentPhone) return;
-      await fetch(`/chain-saas/api/chats/conversations/${currentPhone}/resolve`, { method: 'POST', headers: { 'X-CSRF-Token': csrf } });
-      showToast('Chat marked as resolved.');
-      currentPhone = null;
-      document.getElementById('thread-active').style.display = 'none';
-      document.getElementById('thread-empty').style.display = 'flex';
-      document.getElementById('details-panel').innerHTML = '<div class="thread-empty" style="padding: 40px 20px;"><p>Customer details will appear here.</p></div>';
-      loadChats();
-    }
-
-    // --- Load Lists (Tickets, Orders, Appts) ---
-    async function loadTickets() {
-      const res = await fetch('/chain-saas/api/chats/tickets', { headers: { 'X-CSRF-Token': csrf } });
-      const { tickets } = await res.json();
-      document.getElementById('count-tickets').textContent = tickets.length;
-      document.getElementById('ticket-rows').innerHTML = tickets.map(t => `
-        <tr><td>${t.ref}</td><td>${t.customer_name || t.phone}</td><td>${t.summary}</td><td><span class="badge-pill badge-${t.status === 'new' ? 'escalated' : 'bot'}">${t.status}</span></td><td>${new Date(t.created_at).toLocaleDateString()}</td></tr>
-      `).join('');
-    }
-
-    async function loadOrders() {
-      const res = await fetch('/chain-saas/api/chats/orders', { headers: { 'X-CSRF-Token': csrf } });
-      const { orders } = await res.json();
-      document.getElementById('count-orders').textContent = orders.length;
-      document.getElementById('order-rows').innerHTML = orders.map(o => `
-        <tr><td>${o.ref}</td><td>${o.customer_name || o.phone}</td><td>${o.items}</td><td>${o.delivery_address}</td><td><span class="badge-pill badge-bot">${o.status}</span></td></tr>
-      `).join('');
-    }
-
-    async function loadAppointments() {
-      const res = await fetch('/chain-saas/api/chats/appointments', { headers: { 'X-CSRF-Token': csrf } });
-      const { appointments } = await res.json();
-      document.getElementById('count-appointments').textContent = appointments.length;
-      document.getElementById('appointment-rows').innerHTML = appointments.map(a => `
-        <tr><td>${a.ref}</td><td>${a.customer_name || a.phone}</td><td>${a.appt_date} at ${a.appt_time}</td><td>${a.purpose}</td><td><span class="badge-pill badge-bot">${a.status}</span></td></tr>
-      `).join('');
-    }
-
-    async function seedDemo() {
-      showToast('Generating demo data...');
-      await fetch('/chain-saas/api/chats/seed-demo', { method: 'POST', headers: { 'X-CSRF-Token': csrf } });
-      showToast('Demo data generated!');
-      loadChats();
-      loadTickets();
-      loadOrders();
-      loadAppointments();
-    }
-
-    async function logout() {
-      await fetch('/chain-saas/api/auth/logout', { method: 'POST', headers: { 'X-CSRF-Token': csrf } });
-      localStorage.removeItem('csrf');
-      window.location.href = '/chain-saas/site/index.html';
-    }
-
-    // --- Init ---
-    loadChats();
-    loadTickets();
-    loadOrders();
-    loadAppointments();
-    setInterval(() => { if (currentPhone) loadMessages(currentPhone); loadChats(); }, 10000);
-  </script>
-
+/* ---------- start + polling ---------- */
+loadChats();summary();
+timer=setInterval(()=>{if(document.hidden)return;summary();loadChats();if(phone)loadMessages().catch(()=>{})},8000);
+</script>
 </body>
 </html>
