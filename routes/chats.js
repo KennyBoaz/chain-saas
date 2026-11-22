@@ -280,7 +280,6 @@ router.post("/conversations/:phone/media", auth.requireAuth, uploadChatMedia.sin
     console.error("[Meta Media Error]", err.response?.data || err.message);
     throw new HttpError(502, "Failed to send media via WhatsApp.");
   } finally {
-    fs.unlinkSync(req.file.path); // Clean up local file after sending
   }
 }));
 
