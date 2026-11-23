@@ -54,7 +54,7 @@
     c.replybar = h("div", { class: "replybar hidden" });
     c.box = h("div", { class: "thread-box hidden" }, c.head, c.alert, c.scroll, c.modebar, c.replybar, c.composer);
     c.empty = h("div", { class: "thread-empty" },
-      h("span", { class: "brand-mark" }, "Wina ", h("em", null, "Classic")),
+      h("span", { class: "brand-mark" }, "Chain ", h("em", null, "bot")),
       h("p", null, "Select a chat to read the conversation, reply to the customer and see their orders."));
     var thread = h("section", { class: "thread" }, c.empty, c.box);
 
