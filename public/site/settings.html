@@ -1,164 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Settings — Chain SaaS</title>
-  <link rel="stylesheet" href="/chain-saas/site/style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Settings</title>
+<link rel="manifest" href="/chain-saas/site/manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/chain-saas/site/desk/admin.css">
+<link rel="stylesheet" href="/chain-saas/site/desk/desk-theme.css">
+<link rel="stylesheet" href="/chain-saas/site/desk/app-pages.css">
 </head>
 <body>
-  <!-- Toast Container -->
-  <div id="toast-container"></div>
-
-  <!-- Global Navigation -->
-  <nav class="nav-bar">
-    <div class="nav-brand">Chain SaaS</div>
-    <div class="nav-links">
-      <a href="/chain-saas/site/dashboard.html" class="nav-link">Dashboard</a>
-      <a href="/chain-saas/site/inbox.html" class="nav-link" id="nav-inbox">Inbox</a>
-      <a href="/chain-saas/site/settings.html" class="nav-link active">Settings</a>
-      <button onclick="logout()" class="btn" style="background: #f0f0f0; color: #333; margin-left: 15px; padding: 8px 16px;">Log Out</button>
-    </div>
-  </nav>
-
-  <div class="dash-container" style="max-width: 800px;">
-    <h1 style="margin-bottom: 30px;">Tenant Settings</h1>
-
-    <div class="panel">
-      <h3>AI System Prompt</h3>
-      <p class="subtitle">Tell the AI how to behave. Include your business name, tone, products, and rules.</p>
-      
-      <div class="form-group">
-        <textarea id="systemPrompt" class="form-control" placeholder="You are a helpful assistant for Kadosh Energies. We sell solar panels..."></textarea>
-      </div>
-      <button class="btn" id="btn-save-prompt" onclick="savePrompt()" style="background: var(--primary); color: #fff;">Save AI Prompt</button>
-    </div>
-
-    <div class="panel">
-      <h3>Branding</h3>
-      <p class="subtitle">Customize the look and feel of your dashboard.</p>
-      
-      <div style="display: flex; gap: 20px;">
-        <div class="form-group" style="flex: 1;">
-          <label>Primary Color</label>
-          <input type="color" id="primaryColor" class="form-control" style="height: 55px; padding: 5px; cursor: pointer;">
-        </div>
-        <div class="form-group" style="flex: 1;">
-          <label>Secondary Color</label>
-          <input type="color" id="secondaryColor" class="form-control" style="height: 55px; padding: 5px; cursor: pointer;">
-        </div>
-      </div>
-      
-      <div class="form-group">
-        <label>Slogan</label>
-        <input type="text" id="slogan" class="form-control" placeholder="e.g. Powering Uganda's Future">
-      </div>
-      
-      <button class="btn" id="btn-save-branding" onclick="saveBranding()" style="background: var(--primary); color: #fff;">Save Branding</button>
-    </div>
-  </div>
-
-  <script>
-    let csrf = localStorage.getItem('csrf');
-
-    // --- Toast System ---
-    function showToast(message, type = 'success') {
-      const container = document.getElementById('toast-container');
-      const toast = document.createElement('div');
-      toast.className = `toast ${type}`;
-      toast.innerHTML = `<span>${type === 'success' ? '✓' : '✕'}</span> ${message}`;
-      container.appendChild(toast);
-      
-      setTimeout(() => {
-        toast.classList.add('hiding');
-        setTimeout(() => toast.remove(), 300);
-      }, 3000);
-    }
-
-    // --- Load Data ---
-    async function loadSettings() {
-      const res = await fetch('/chain-saas/api/tenant/me', { headers: { 'X-CSRF-Token': csrf } });
-      if (!res.ok) return window.location.href = '/chain-saas/site/login.html';
-      
-      const { tenant } = await res.json();
-      
-      // Hide inbox if WhatsApp isn't connected
-      if (tenant.status !== 'active') {
-        document.getElementById('nav-inbox').style.display = 'none';
-      }
-
-      document.getElementById('systemPrompt').value = tenant.system_prompt || '';
-      
-      const brand = tenant.branding_json || {};
-      if (brand.primaryColor) document.getElementById('primaryColor').value = brand.primaryColor;
-      if (brand.secondaryColor) document.getElementById('secondaryColor').value = brand.secondaryColor;
-      if (brand.slogan) document.getElementById('slogan').value = brand.slogan;
-    }
-
-    // --- Save Actions ---
-    async function savePrompt() {
-      const btn = document.getElementById('btn-save-prompt');
-      const prompt = document.getElementById('systemPrompt').value;
-      
-      btn.classList.add('loading');
-      btn.textContent = "Saving...";
-      
-      try {
-        const res = await fetch('/chain-saas/api/tenant/profile', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
-          body: JSON.stringify({ systemPrompt: prompt })
-        });
-        
-        if (!res.ok) throw new Error("Failed to save");
-        
-        showToast('AI Prompt saved successfully!');
-        btn.classList.remove('loading');
-        btn.textContent = "Save AI Prompt";
-      } catch (e) {
-        showToast('Failed to save prompt.', 'error');
-        btn.classList.remove('loading');
-        btn.textContent = "Save AI Prompt";
-      }
-    }
-
-    async function saveBranding() {
-      const btn = document.getElementById('btn-save-branding');
-      const payload = {
-        primaryColor: document.getElementById('primaryColor').value,
-        secondaryColor: document.getElementById('secondaryColor').value,
-        slogan: document.getElementById('slogan').value
-      };
-      
-      btn.classList.add('loading');
-      btn.textContent = "Saving...";
-
-      try {
-        const res = await fetch('/chain-saas/api/tenant/branding', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
-          body: JSON.stringify(payload)
-        });
-        
-        if (!res.ok) throw new Error("Failed");
-        
-        showToast('Branding colors and slogan updated!');
-        btn.classList.remove('loading');
-        btn.textContent = "Save Branding";
-      } catch (e) {
-        showToast('Failed to save branding.', 'error');
-        btn.classList.remove('loading');
-        btn.textContent = "Save Branding";
-      }
-    }
-
-    async function logout() {
-      await fetch('/chain-saas/api/auth/logout', { method: 'POST', headers: { 'X-CSRF-Token': csrf } });
-      localStorage.removeItem('csrf');
-      window.location.href = '/chain-saas/site/index.html';
-    }
-
-    loadSettings();
-  </script>
+<div id="app"></div>
+<div id="toasts" aria-live="polite"></div>
+<script src="/chain-saas/site/desk/admin-core.js"></script>
+<script src="/chain-saas/site/desk/desk-adapter.js"></script>
+<script src="/chain-saas/site/desk/shell.js"></script>
+<script src="/chain-saas/site/desk/settings.js"></script>
 </body>
 </html>

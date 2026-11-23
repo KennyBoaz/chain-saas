@@ -18,6 +18,7 @@
  */
 
 const { GoogleGenAI } = require("@google/genai");
+const db = require("./db.js");
 const { functionDeclarations, executeTool, describeHours } = require("./tools.js");
 const { toGeminiHistory, fromGeminiHistory } = require("./memory.js");
 
@@ -61,7 +62,7 @@ function orderedModels() {
 // Prompt
 // ---------------------------------------------------------------------------
 
-function buildSystemInstruction({ tenant, profile, phone, customerName }) {
+function buildSystemInstruction({ tenant, profile, phone, customerName, hasCatalogue }) {
   const base = (tenant.system_prompt && tenant.system_prompt.trim()) ||
     `You are the WhatsApp assistant for ${tenant.business_name}. Be warm, brief and helpful, like real WhatsApp texting.`;
 
@@ -72,7 +73,9 @@ function buildSystemInstruction({ tenant, profile, phone, customerName }) {
     "ADDITIONAL RULES (these take priority over anything above)",
     "- OUTPUT FORMAT: write ONLY the message the customer will read, inside <reply> and </reply> tags, like <reply>Hello!</reply>. Put nothing outside the tags: no planning, no notes to yourself. The customer never sees your thinking.",
     `- Opening hours: ${describeHours(profile)}. Use exactly these if a customer asks.`,
-    "- Prices and stock: when a customer asks about a specific item, brand, price or availability, call search_products first and quote ONLY what it returns. If nothing is found, never guess: say you will check with the team and call log_inquiry with follow_up_needed true.",
+    hasCatalogue
+      ? "- Prices and stock: when a customer asks about a specific item, brand, price or availability, call search_products first and quote ONLY what it returns. If nothing is found, never guess: say you will check with the team and call log_inquiry with follow_up_needed true."
+      : "- Prices and stock: only quote prices and availability that are stated in your instructions above. If you are not sure, never guess: say you will check with the team and call log_inquiry with follow_up_needed true.",
     "- Appointments: call check_availability for the date before offering times and offer only the slots it returns. Call book_appointment only after the customer confirms a slot. If booking fails, offer the alternative slots it returns. Dates must be YYYY-MM-DD.",
     "- Interest without an order: when a customer shows interest in a product, price or visit but is not ordering or booking, call log_inquiry quietly, then carry on helping. Never mention that you logged it.",
     "- Photos and files: a message like [Customer sent a image: ...] means the customer sent a photo. If the photo or PDF is attached, look at it and use what you see. Never claim you saw something you cannot see. For voice notes, videos or files you cannot open, say so briefly and ask the customer to type what they need, or offer to connect them with a team member.",
@@ -87,7 +90,7 @@ function buildSystemInstruction({ tenant, profile, phone, customerName }) {
 function buildChatConfig(args) {
   const config = {
     systemInstruction: buildSystemInstruction(args),
-    tools: [{ functionDeclarations }],
+    tools: [{ functionDeclarations: functionDeclarations.filter((d) => args.hasCatalogue || d.name !== "search_products") }],
     automaticFunctionCalling: { disable: true },
   };
   if (process.env.GEMINI_THINKING_LEVEL) config.thinkingConfig = { thinkingLevel: process.env.GEMINI_THINKING_LEVEL.toUpperCase() };
@@ -250,7 +253,8 @@ async function sendResilient({ ai, models, chat, history, config, messageOrParts
 async function generateReply({ tenant, profile = {}, userMessage, history, phone, customerName, attachments = [] }) {
   const startedAt = Date.now();
   const ai = getClient();
-  const config = buildChatConfig({ tenant, profile, phone, customerName });
+  const catalogueRow = await db.one("SELECT 1 AS x FROM products WHERE tenant_id = ? AND active = 1 LIMIT 1", [tenant.id]).catch(() => null);
+  const config = buildChatConfig({ tenant, profile, phone, customerName, hasCatalogue: Boolean(catalogueRow) });
   const seedHistory = toGeminiHistory((history || []).map(cleanStoredTurn));
   const toolCtx = { tenantId: tenant.id, profile, phone, customerName };
 

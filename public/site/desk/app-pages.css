@@ -1,0 +1,35 @@
+/* Dashboard and Settings pages (on top of admin.css + desk-theme.css) */
+a.tab { text-decoration: none; }
+.panel { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 22px; margin-bottom: 18px; }
+.panel h3 { font-size: 24px; margin-bottom: 2px; }
+.panel .sub { color: var(--muted); margin: 0 0 16px; }
+.panel .foot { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 18px; }
+.tile { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; }
+.tile small { display: block; font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.tile .big { display: block; font: 600 36px/1.1 var(--font-head); }
+.tile .note { color: var(--muted); font-size: 12.5px; margin-top: 4px; }
+.tile.warn .big { color: var(--danger); }
+.meter { height: 6px; background: var(--stone); border-radius: 6px; overflow: hidden; margin-top: 10px; }
+.meter i { display: block; height: 100%; background: var(--gold); }
+.step { display: flex; gap: 12px; align-items: center; padding: 11px 0; border-top: 1px solid var(--line); }
+.step:first-of-type { border-top: 0; }
+.step .tick { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--line-strong); display: flex; align-items: center; justify-content: center; flex: none; color: #fff; }
+.step.done .tick { background: var(--ok); border-color: var(--ok); }
+.step.done .t { color: var(--muted); text-decoration: line-through; }
+.step .t { flex: 1; }
+.step .tick svg { width: 14px; height: 14px; }
+.bars { display: flex; align-items: flex-end; gap: 6px; height: 150px; }
+.bars > div { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 2px; }
+.bars .pair { width: 100%; flex: 1; display: flex; align-items: flex-end; gap: 2px; }
+.bars span { flex: 1; border-radius: 3px 3px 0 0; background: var(--brand); min-height: 2px; }
+.bars span.r { background: var(--gold); }
+.bars small { font-size: 10px; color: var(--muted); }
+.legend { display: flex; gap: 16px; font-size: 12px; color: var(--muted); margin-top: 10px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: var(--brand); margin-right: 6px; }
+.legend i.r { background: var(--gold); }
+.hrow { display: grid; grid-template-columns: 110px 1fr 1fr; gap: 10px; align-items: center; margin-bottom: 8px; }
+.hrow label { display: flex; gap: 8px; align-items: center; }
+.swatch { height: 46px; padding: 4px; cursor: pointer; }
+@media (max-width: 700px) { .row2 { grid-template-columns: 1fr; } .hrow { grid-template-columns: 90px 1fr 1fr; } }

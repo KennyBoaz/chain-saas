@@ -1,200 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard — Chain SaaS</title>
-  <link rel="manifest" href="/chain-saas/site/manifest.json">
-  <meta name="theme-color" content="#243b32">
-  <link rel="stylesheet" href="/chain-saas/site/style.css">
-  <style>
-    .dash-container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
-    .panel { background: #fff; padding: 30px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,.05); border-left: 4px solid var(--gold); }
-    .status-badge { display: inline-block; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
-    .status-pending { background: #fff3cd; color: #856404; }
-    .status-active { background: #d4edda; color: #155724; }
-    .status-read_only { background: #f8d7da; color: #721c24; }
-    .flex-row { display: flex; justify-content: space-between; align-items: center; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dashboard</title>
+<link rel="manifest" href="/chain-saas/site/manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/chain-saas/site/desk/admin.css">
+<link rel="stylesheet" href="/chain-saas/site/desk/desk-theme.css">
+<link rel="stylesheet" href="/chain-saas/site/desk/app-pages.css">
 </head>
 <body>
-  <nav>
-    <div class="logo">Chain SaaS</div>
-    <div class="links">
-      <span id="nav-user" style="margin-right: 20px; font-size: 14px; color: var(--muted);"></span>
-      <button onclick="logout()" class="btn" style="background: #eee; color: #333;">Log Out</button>
-    </div>
-  </nav>
-
-  <div class="dash-container">
-    <h1 style="margin-bottom: 20px;">Welcome, <span id="biz-name"></span></h1>
-
-    <!-- Billing / Subscription Panel -->
-    <div class="panel" id="billing-panel">
-      <div class="flex-row">
-        <div>
-          <h3>Subscription Status</h3>
-          <p style="margin-top: 5px;">Status: <span id="tenant-status" class="status-badge"></span></p>
-        </div>
-        <button class="btn" id="pay-btn" onclick="simulatePayment()">Activate Subscription (Mock)</button>
-      </div>
-    </div>
-
-    <!-- WhatsApp Connection Panel -->
-    <div class="panel">
-      <div class="flex-row">
-        <div>
-          <h3>WhatsApp Connection</h3>
-          <p style="margin-top: 5px; color: var(--muted);">Connect your business number to let the AI reply.</p>
-          <p style="margin-top: 10px;">Status: <span id="wa-status" style="font-weight: bold;">Checking...</span></p>
-        </div>
-        <!-- THIS IS THE MISSING BUTTON -->
-        <button class="btn" id="wa-btn" onclick="connectWhatsApp()" style="display: none;">Connect WhatsApp</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Facebook SDK for Embedded Signup -->
-  <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
-
-  <script>
-    let currentTenant = null;
-    let csrf = localStorage.getItem('csrf');
-
-    // 1. Initialize FB SDK (Runs immediately)
-    window.fbAsyncInit = function() {
-      FB.init({
-        appId: '1669045207960904', // <--- INSERT YOUR META APP ID HERE
-        autoLogAppEvents: true,
-        xfbml: false,
-        version: 'v20.0'
-      });
-      console.log("Facebook SDK Loaded");
-    };
-
-    // 2. Load User Data on page load
-    async function loadData() {
-      try {
-        const res = await fetch('/chain-saas/api/auth/me', { headers: { 'X-CSRF-Token': csrf } });
-        if (res.status === 401) return window.location.href = '/chain-saas/site/login.html';
-        
-        const data = await res.json();
-        currentTenant = data.tenant;
-        document.getElementById('nav-user').textContent = data.user.email;
-        document.getElementById('biz-name').textContent = currentTenant.name;
-        
-        // Update UI based on status
-        const statusEl = document.getElementById('tenant-status');
-        statusEl.textContent = currentTenant.status;
-        statusEl.className = 'status-badge status-' + currentTenant.status;
-
-        // If active, show WhatsApp button
-        if (currentTenant.status === 'active') {
-          document.getElementById('pay-btn').style.display = 'none';
-          
-          const waRes = await fetch('/chain-saas/api/whatsapp/status', { headers: { 'X-CSRF-Token': csrf } });
-          const waData = await waRes.json();
-          
-          const waBtn = document.getElementById('wa-btn');
-          const waStatus = document.getElementById('wa-status');
-          
-          if (waData.connected) {
-            waStatus.textContent = 'Connected (ID: ' + waData.connection.phone_number_id + ')';
-            waStatus.style.color = 'green';
-            waBtn.style.display = 'none';
-          } else {
-            waStatus.textContent = 'Not connected';
-            waStatus.style.color = 'red';
-            waBtn.style.display = 'inline-block'; // Show the button!
-          }
-        } else {
-          document.getElementById('wa-status').textContent = 'Requires active subscription';
-        }
-      } catch (e) {
-        console.error(e);
-        alert("Error loading dashboard.");
-      }
-    }
-
-    // 3. Simulate Payment
-    async function simulatePayment() {
-      const btn = document.getElementById('pay-btn');
-      btn.textContent = 'Processing...';
-      
-      const res = await fetch('/chain-saas/api/billing/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
-        body: JSON.stringify({ planId: 1 })
-      });
-      
-      if (res.ok) {
-        alert('Payment successful! Subscription active.');
-        window.location.reload();
-      } else {
-        alert('Payment failed.');
-        btn.textContent = 'Activate Subscription (Mock)';
-      }
-    }
-
-    // 4. Embedded WhatsApp Signup
-    function connectWhatsApp() {
-      if (typeof FB === 'undefined') {
-        alert("Facebook SDK is still loading. Please wait a second and try again.");
-        return;
-      }
-
-      FB.login(function(response) {
-        if (response.authResponse) {
-          console.log('FB Login successful', response);
-        } else {
-          console.log('User cancelled login or did not fully authorize.');
-        }
-      }, {
-        config_id: '3702487739888996', // <--- INSERT YOUR META CONFIG ID HERE
-        response_type: 'code',
-        override_default_response_type: true,
-        extras: { setup: {}, featureType: 'whatsapp_business_app_onboarding' }
-      });
-    }
-
-    // 5. Listen for Meta's Embedded Signup success message
-    window.addEventListener('message', async (event) => {
-      if (!event.origin.endsWith('facebook.com')) return;
-      
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'WA_EMBEDDED_SIGNUP' && data.event === 'FINISH') {
-          const { waba_id, phone_number_id } = data.data;
-          
-          FB.getLoginStatus(async (response) => {
-            if (response.authResponse && response.authResponse.code) {
-              const code = response.authResponse.code;
-              
-              const res = await fetch('/chain-saas/api/whatsapp/connect', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
-                body: JSON.stringify({ code, wabaId: waba_id, phoneNumberId: phone_number_id })
-              });
-              
-              if (res.ok) {
-                alert('WhatsApp Connected Successfully!');
-                window.location.reload();
-              } else {
-                alert('Failed to connect WhatsApp.');
-              }
-            }
-          });
-        }
-      } catch (e) { /* Ignore parsing errors */ }
-    });
-
-    async function logout() {
-      await fetch('/chain-saas/api/auth/logout', { method: 'POST', headers: { 'X-CSRF-Token': csrf } });
-      localStorage.removeItem('csrf');
-      window.location.href = '/chain-saas/site/index.html';
-    }
-
-    loadData();
-  </script>
+<div id="app"></div>
+<div id="toasts" aria-live="polite"></div>
+<script src="/chain-saas/site/desk/admin-core.js"></script>
+<script src="/chain-saas/site/desk/desk-adapter.js"></script>
+<script src="/chain-saas/site/desk/shell.js"></script>
+<script src="/chain-saas/site/desk/dashboard.js"></script>
 </body>
 </html>

@@ -7,6 +7,7 @@ const { HttpError, wrap } = require("../apiUtil.js");
 const audit = require("../audit.js");
 
 const router = express.Router();
+router.use(auth.checkCsrf);
 const GRAPH_VERSION = process.env.META_GRAPH_VERSION || "v20.0";
 
 // 1. Get connection status
