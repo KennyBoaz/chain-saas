@@ -1,0 +1,9 @@
+/* Tenant theme: desk-app.js sets --forest, --gold and --brand from the tenant's branding. Everything else derives from them. */
+:root { --brand: #243b32; --gold-deep: color-mix(in srgb, var(--gold) 72%, #000); --gold-soft: color-mix(in srgb, var(--gold) 20%, #fff); }
+.btn:not(.ghost):not(.gold):not(.danger) { background: var(--brand); border-color: var(--brand); }
+.btn:not(.ghost):not(.gold):not(.danger):hover { background: color-mix(in srgb, var(--brand) 80%, #000); }
+.chip.active, .seg button.active { background: var(--brand); border-color: var(--brand); }
+.pill.p-new { background: var(--brand); border-color: var(--brand); }
+.announce { background: var(--brand); }
+.brand-logo { max-width: 170px; object-fit: contain; }
+.notice.inactive { background: var(--warn-soft); color: var(--warn); border-color: #e8d5a4; }
