@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pricing | Chain Innovations</title>
+<meta name="description" content="Plans for the Chain WhatsApp assistant, priced in Ugandan shillings.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Poppins:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<div id="nav"></div>
+
+<section style="padding-bottom:40px"><div class="wrap">
+  <div class="head c"><div class="eyebrow">Pricing</div><h1 style="font-size:clamp(40px,5.4vw,64px)">One assistant. <em>Plans that grow with you.</em></h1><p>Start with a free trial. Upgrade when your customers keep you busy.</p></div>
+  <div class="plans" id="plans"></div>
+</div></section>
+
+<section style="padding-top:20px"><div class="wrap">
+  <div class="head c"><h2>Compare <em>plans</em></h2></div>
+  <div class="scroll"><table class="cmp" id="cmp"></table></div>
+  <p class="note">Need more messages, seats or numbers? <a href="index.html#how">Talk to us</a> about a custom plan.</p>
+</div></section>
+
+<section style="background:#efe9dc"><div class="wrap">
+  <div class="head c"><div class="eyebrow">Billing</div><h2>Questions about <em>paying</em></h2></div>
+  <div class="faq">
+    <details><summary>Is there a free trial?</summary><p>Yes. Create an account, set up your assistant and see it answer real messages before you pay.</p></details>
+    <details><summary>How do I pay?</summary><p>Today we activate your plan after a bank transfer or cash payment, and online payment is on its way. Your dashboard always shows how many days are left.</p></details>
+    <details><summary>Can I change plan later?</summary><p>Yes. Ask us and we will move you to a larger or smaller plan from your next period.</p></details>
+    <details><summary>Do you offer custom plans?</summary><p>Yes, for higher volumes or several WhatsApp numbers. Get in touch and we will agree one with you.</p></details>
+  </div>
+</div></section>
+
+<section class="band final"><div class="wrap">
+  <h2>Ready when <em>you are</em></h2>
+  <div class="actions"><a class="btn gold" href="../chain-saas/site/signup.html">Start free trial</a></div>
+</div></section>
+
+<div id="footer"></div>
+<script src="site.js"></script>
+<script>
+ChainSite.loadPlans(function (plans) {
+  var S = ChainSite;
+  document.getElementById("plans").innerHTML = plans.length ? S.planCards(plans) : '<p class="note" style="grid-column:1/-1">Plans are being updated. <a href="/chain-saas/site/signup.html">Start your free trial</a> and choose one later.</p>';
+  if (!plans.length) return;
+  var rows = {}, order = [];
+  function put(label, i, v) { if (!rows[label]) { rows[label] = []; order.push(label); } rows[label][i] = v; }
+  plans.forEach(function (p, i) {
+    var l = typeof p.limits_json === "string" ? JSON.parse(p.limits_json || "{}") : (p.limits_json || {});
+    put("Price per month", i, S.money(p.amount_ugx) + " UGX");
+    if (l.messages_per_month) put("Messages a month", i, S.money(l.messages_per_month));
+    if (l.staff_seats) put("Team seats", i, l.staff_seats);
+    if (l.whatsapp_numbers) put("WhatsApp numbers", i, l.whatsapp_numbers);
+    S.featuresOf(p).forEach(function (f) { put(f, i, true); });
+  });
+  document.getElementById("cmp").innerHTML = "<thead><tr><th></th>" + plans.map(function (p) { return "<th>" + S.esc(p.name) + "</th>"; }).join("") + "</tr></thead><tbody>" +
+    order.map(function (label) {
+      return "<tr><td>" + S.esc(label) + "</td>" + plans.map(function (p, i) { var v = rows[label][i]; return "<td>" + (v === true ? '<span class="yes">✓</span>' : v === undefined ? '<span class="no">–</span>' : S.esc(v)) + "</td>"; }).join("") + "</tr>";
+    }).join("") + "</tbody>";
+});
+</script>
+</body>
+</html>
