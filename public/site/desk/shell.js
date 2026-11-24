@@ -30,8 +30,7 @@
   function logout() {
     Shell.api("POST", "/auth/logout", {}).then(function () {
       try { localStorage.removeItem("csrf"); } catch (e) { /* ignore */ }
-      // location.href = BASE + "/site/index.html";
-      location.href = "/";
+      location.href = WC.home || "/";
     });
   }
 

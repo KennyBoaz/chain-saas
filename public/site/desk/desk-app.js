@@ -52,8 +52,7 @@
   function logout() {
     api("POST", "/auth/logout", {}, { keepOn401: true }).then(function () {
       try { localStorage.removeItem("csrf"); } catch (e) { /* ignore */ }
-      // location.href = BASE + "../../index.html";
-      location.href = "/";
+      location.href = WC.home || "/";
     });
   }
 

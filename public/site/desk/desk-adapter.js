@@ -3,6 +3,7 @@
   "use strict";
   var WC = window.WC, S = WC.S;
 
+  WC.home = "/";                                                 // where Sign out sends people: the marketing site
   WC.base = location.pathname.replace(/\/site\/[^/]*$/, ""); // "/chain-saas"
   WC.apiBase = WC.base + "/api/chats";                          // chat, items, media, templates
 
