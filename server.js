@@ -40,7 +40,7 @@ router.use("/api/auth", require("./routes/auth.js"));
 router.use("/api/tenant", require("./routes/tenant.js"));
 router.use("/api/billing", require("./routes/billing.js"));
 router.use("/api/platform", require("./routes/platform.js")); 
-router.use("/api/whatsapp", require("./routes/whatsapp.js")); // <-- ADD THIS
+router.use("/api/whatsapp", require("./modules/whatsapp-onboarding/routes.js")); // <-- ADD THIS
 router.use("/webhook", require("./routes/webhook.js"));       // <-- ADD THIS
 router.use("/api/chats", require("./routes/chats.js")); // Add this line
 router.use("/api/templates", require("./routes/templates.js"));
