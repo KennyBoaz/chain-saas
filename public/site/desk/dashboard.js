@@ -72,7 +72,7 @@
   }
 
   // ---- WhatsApp Embedded Signup (Facebook SDK) ----
-  window.fbAsyncInit = function () { FB.init({ appId: FB_APP_ID, autoLogAppEvents: true, xfbml: false, version: "v22.0" }); };
+  window.fbAsyncInit = function () { FB.init({ appId: FB_APP_ID, autoLogAppEvents: true, xfbml: false, version: "v26.0" }); };
   var sdk = document.createElement("script");
   sdk.async = true; sdk.defer = true; sdk.crossOrigin = "anonymous"; sdk.src = "https://connect.facebook.net/en_US/sdk.js";
   document.head.appendChild(sdk);

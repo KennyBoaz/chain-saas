@@ -30,8 +30,7 @@
   function logout() {
     Shell.api("POST", "/auth/logout", {}).then(function () {
       try { localStorage.removeItem("csrf"); } catch (e) { /* ignore */ }
-      // location.href = BASE + "/site/index.html";
-      location.href = "/";
+      location.href = BASE + "/site/index.html";
     });
   }
 
@@ -45,7 +44,7 @@
       WC.setKids(brand, [img]);
     } else WC.setKids(brand, text);
 
-    var links = [["dashboard", "Dashboard", "box"], ["inbox", "Inbox", "chat"], ["settings", "Settings", "edit"]].map(function (l) {
+    var links = [["dashboard", "Dashboard", "box"], ["inbox", "Inbox", "chat"], ["templates", "Templates", "tag"], ["settings", "Settings", "edit"]].map(function (l) {
       return h("a", { class: "tab" + (l[0] === active ? " active" : ""), href: BASE + "/site/" + l[0] + ".html" }, icon(l[2]), h("span", { class: "tl" }, l[1]), h("span", { class: "tl-s" }, l[1]));
     });
     var menu = h("div", { class: "menu hidden", role: "menu" },

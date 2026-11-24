@@ -14,7 +14,7 @@ const https = require("https");
 const db = require("./db.js");
 const cryptoHelper = require("./crypto.js");
 
-const GRAPH_API_VERSION = process.env.META_GRAPH_VERSION || "v22.0";
+const GRAPH_API_VERSION = process.env.META_GRAPH_VERSION || "v26.0";
 const GRAPH_BASE = process.env.WHATSAPP_GRAPH_BASE || "https://graph.facebook.com";
 const MAX_TEXT_LENGTH = 4096;
 const SEND_ATTEMPTS = 2;
@@ -392,7 +392,39 @@ async function sendTemplate(conn, to, { name, language, params = [] }) {
   }
 }
 
+
+// ---------------------------------------------------------------------------
+// Onboarding (Embedded Signup) and template management
+// ---------------------------------------------------------------------------
+
+/** Subscribe our app to webhooks on a customer's WABA. Without this, that business's messages never reach us. */
+async function subscribeWaba(token, wabaId) {
+  await graph.post(`/${GRAPH_API_VERSION}/${wabaId}/subscribed_apps`, {}, { headers: { Authorization: `Bearer ${token}` } });
+}
+
+async function unsubscribeWaba(token, wabaId) {
+  await graph.delete(`/${GRAPH_API_VERSION}/${wabaId}/subscribed_apps`, { headers: { Authorization: `Bearer ${token}` } });
+}
+
+/** Create a message template. examples = one sample value per {{n}} variable in the body. Returns { id, status, category }. */
+async function createTemplate(conn, { name, language, category, body, header, footer, examples = [] }) {
+  const components = [{ type: "BODY", text: body }];
+  if (examples.length) components[0].example = { body_text: [examples] };
+  if (header) components.unshift({ type: "HEADER", format: "TEXT", text: header });
+  if (footer) components.push({ type: "FOOTER", text: footer });
+  const response = await graph.post(`/${GRAPH_API_VERSION}/${conn.wabaId}/message_templates`, { name, language, category, components }, auth(conn));
+  return response.data || {};
+}
+
+async function deleteTemplate(conn, name) {
+  await graph.delete(`/${GRAPH_API_VERSION}/${conn.wabaId}/message_templates`, { ...auth(conn), params: { name } });
+}
+
 module.exports = {
+  subscribeWaba,
+  unsubscribeWaba,
+  createTemplate,
+  deleteTemplate,
   loadConnection,
   parseWebhook,
   sendText,

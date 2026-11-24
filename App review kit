@@ -1,0 +1,56 @@
+# Chain: Meta App Review kit
+
+Based on Meta's "Become a Tech Provider" guide (updated Aug 2026). Confirm each point against your own App Dashboard, because Meta changes these screens.
+
+## 1. What Meta requires
+1. A **Business-type Meta app** with the **WhatsApp use case**, linked to a business portfolio.
+2. **Two-factor authentication** on your Meta account and **business verification** of Chain Innovation Ltd. Review cannot start until the business is verified.
+3. Basic app settings: **app icon**, **privacy policy URL**, **app category**.
+4. **Advanced access** requested for `whatsapp_business_messaging` and `whatsapp_business_management`.
+5. **Two screen recordings** (below).
+6. The "Access verification" step may no longer exist. If your dashboard still shows it after approval, complete it.
+
+## 2. Your tasks, in order
+1. Turn on 2FA. Start business verification (Tech Provider onboarding page, "Start verification"). Have ready: company name, address, phone, email, website, and a registration certificate. Allow days for this.
+2. App Dashboard > Settings > Basic: add the 1024x1024 icon, category (Business and pages), and these URLs (replace the domain with yours):
+   - Privacy Policy: `https://YOUR-DOMAIN/chain-saas/site/privacy.html`
+   - Terms of Service: `https://YOUR-DOMAIN/chain-saas/site/terms.html`
+   - Data deletion instructions: `https://YOUR-DOMAIN/chain-saas/site/data-deletion.html`
+3. WhatsApp > Configuration: callback URL `https://YOUR-DOMAIN/chain-saas/webhook`, the verify token from your `.env` (`WEBHOOK_VERIFY_TOKEN`). Subscribe to the **messages** field, plus `smb_message_echoes`, `history` and `smb_app_state_sync` if you onboard WhatsApp Business app numbers.
+4. `.env` on the server: `META_APP_ID`, `META_APP_SECRET`, `WEBHOOK_VERIFY_TOKEN`, `GEMINI_API_KEY`, and optionally `META_GRAPH_VERSION=v26.0`. Make the Facebook IDs in `public/site/desk/dashboard.js` (`FB_APP_ID`, `FB_CONFIG_ID`) match this app. Restart the app.
+5. Make sure the Embedded Signup configuration (Facebook Login for Business) lists both WhatsApp permissions.
+6. Record the two videos, then App Review > Permissions and Features > request advanced access for both permissions > submit.
+
+## 3. Video 1: sending a message from the app
+Show, in one continuous recording, with your face-free screen and captions or narration:
+1. Log in to the Chain console as a business owner.
+2. Dashboard: click **Connect WhatsApp** and complete Embedded Signup (show the Meta pop-up and the "Connected" result).
+3. From a second phone, send a WhatsApp message to the connected number. Show it arriving in the Chain **Inbox**.
+4. Click **Take over**, type a reply, press send.
+5. Show the reply **arriving on the phone's WhatsApp**. Keep both screens in the recording (phone mirror or WhatsApp Web).
+6. Optional but helpful: show the AI assistant answering a second message on its own.
+
+## 4. Video 2: creating a message template
+1. Chain console > **Templates** > **New template**.
+2. Name `order_ready`, category Utility, language English, message `Hello {{1}}, your order {{2}} is ready for pickup.`, examples `Ann` and `ORD-1001`.
+3. Submit. Show the template listed with status **pending**, then (after Meta reviews it) **approved**.
+4. If you are rejected on video 2, Meta also accepts a recording of WhatsApp Manager creating a template. Show the app version first.
+
+## 5. Text to paste into the submission
+**whatsapp_business_messaging:** Chain is a multi-tenant customer-service platform. Businesses connect their own WhatsApp number through Embedded Signup. Our app sends and receives messages on the business's behalf: automated replies from an AI assistant, replies from the business's human agents in a shared inbox, approved template messages after the 24-hour window, and delivery status updates received by webhook.
+
+**whatsapp_business_management:** After a business completes Embedded Signup we use this permission to subscribe our app to webhooks on the business's WhatsApp Business Account, and to list, create and delete the business's message templates so it can contact customers after the 24-hour customer-service window.
+
+## 6. Make the review easy to pass
+- Reviewers cannot use your admin. Create a **test business account** on Chain, mention its email and password in the submission notes, and keep it logged-in-able and active. Do not use the super admin.
+- The console must be live (not a "coming soon" page) for the whole review. A 503 during review is a common reason for rejection.
+- Privacy policy, terms and data deletion pages must open without a login and match what the app really does (stores messages, phone numbers, names, files, for the business only; how to ask for deletion).
+- Videos: readable resolution, no cuts between sending and receiving, each permission demonstrated.
+- If rejected, read Meta's note, fix that exact point, and resubmit. A second submission with a clearer template video is common.
+
+## 7. What was added to the app for this
+- Webhook subscription on each business's WABA during connect (required by Meta, previously missing).
+- The connection status no longer returns the stored token.
+- Disconnect stops message delivery to us before removing the token.
+- A Templates page: list with review status, create, delete.
+- Graph API version moved to v26.0 (override with `META_GRAPH_VERSION`).
